@@ -276,22 +276,6 @@
     padding-right: 46px;
   }
 
-  .filter-bar {
-    padding: var(--sp-3);
-    gap: var(--sp-2);
-  }
-
-  .filter {
-    min-width: 0;
-    flex: 1 1 calc(50% - var(--sp-2));
-  }
-
-  .filter-bar__count {
-    flex-basis: 100%;
-    margin-left: 0;
-    padding-bottom: 0;
-  }
-
   .stats {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -433,3 +417,17 @@
     height: 96px;
   }
 }
+
+  /* ---------- Compact phone refinements ---------- */
+  .card__progress-word {
+    display: none;
+  }
+
+  .row__time {
+    display: none;
+  }
+
+  .row__meta > span[aria-hidden="true"]:nth-of-type(2) {
+    display: none;
+  }
+

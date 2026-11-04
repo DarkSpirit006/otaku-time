@@ -189,7 +189,24 @@ kbd {
 /* Staggered children (cards, rows) — capped via --stagger inline */
 .stagger-in > * {
   animation: card-enter var(--dur-slow) var(--ease-out) both;
-  animation-delay: calc(var(--stagger, 0) * 46ms);
+  animation-delay: calc(var(--stagger, 0) * 40ms);
+}
+
+/* Newly appended cards (pagination, imports) fade up in place — applied
+   by the renderer only to elements that weren't on screen before. */
+.item-in {
+  animation: item-in var(--dur-base) var(--ease-out) both;
+}
+
+@keyframes item-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 @keyframes card-enter {

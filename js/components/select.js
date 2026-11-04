@@ -155,17 +155,26 @@ function enhance(select) {
   });
 
   trigger.addEventListener("keydown", (event) => {
+    // When the menu is already open the wrapper handles keys — letting both
+    // levels run would double-advance the active option or commit instantly.
+    const isOpen = state.wrapper.classList.contains("is-open");
     switch (event.key) {
       case "ArrowDown":
       case "ArrowUp":
         event.preventDefault();
-        openWrapper(state);
-        moveActive(event.key === "ArrowDown" ? 1 : -1);
+        if (!isOpen) {
+          event.stopPropagation();
+          openWrapper(state);
+          moveActive(event.key === "ArrowDown" ? 1 : -1);
+        }
         break;
       case "Enter":
       case " ":
         event.preventDefault();
-        openWrapper(state);
+        if (!isOpen) {
+          event.stopPropagation();
+          openWrapper(state);
+        }
         break;
       default:
         break;

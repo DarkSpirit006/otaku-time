@@ -96,7 +96,12 @@ function onContentChange(event) {
   const input = event.target.closest("[data-progress-input]");
   if (!input || !currentMedia) return;
   const value = Number.parseInt(input.value, 10);
-  if (!Number.isFinite(value)) return;
+  if (!Number.isFinite(value)) {
+    // Invalid/cleared input: snap back to the stored value.
+    const item = watchlist.find(currentMedia.id);
+    input.value = item ? String(item.watched) : "0";
+    return;
+  }
   if (watchlist.setProgress(currentMedia, value)) {
     renderDetail(currentMedia, { loaded: true });
     ctxRef?.watchlistChanged?.();

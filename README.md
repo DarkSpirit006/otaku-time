@@ -6,9 +6,9 @@ A local-first anime schedule and watchlist tracker. Three sections — **Upcomin
 
 ## Features
 
-- **Upcoming** — a “next episode” spotlight plus a date-grouped poster grid of everything airing in the next week, with live countdowns and a *Now* divider for today.
-- **Watchlist** — everything you track, with stats, per-title episode progress (`+1` / direct input), completion states, and smart filters. Stored in `localStorage` and preserved across visits.
-- **Recently aired** — a reverse-chronological timeline of the last 48 hours (expandable to a week or everything) grouped by day.
+- **Upcoming** — a “next episode” spotlight plus a date-grouped poster grid of the whole schedule window, in air-time order, with live countdowns and a *Now* divider for today.
+- **Watchlist** — everything you track, newest additions first, with stats, per-title episode progress (`+1` / direct input) and completion states. Stored in `localStorage` and preserved across visits.
+- **Recently aired** — the full loaded history, newest first, grouped by day.
 
 Around those three sections:
 

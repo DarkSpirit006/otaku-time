@@ -36,7 +36,7 @@ export function notice(text, kind = "danger") {
 
 /**
  * Section heading: eyebrow + h1 + meta on the left, optional
- * aside (filters/actions) on the right.
+ * * aside (extra controls) on the right.
  */
 export function sectionHead({ eyebrow, title, meta = "", aside = "" }) {
   return `<header class="section-head">

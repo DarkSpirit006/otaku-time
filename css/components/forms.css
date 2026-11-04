@@ -54,45 +54,6 @@
   color: var(--text-dim);
 }
 
-/* ---------- Filter bar ---------- */
-.filter-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--sp-3);
-  margin-bottom: var(--sp-5);
-  padding: var(--sp-3-5);
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-}
-
-.filter {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 148px;
-}
-
-.filter__label {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-faint);
-}
-
-.filter-bar__count {
-  margin-left: auto;
-  padding-bottom: 10px;
-  font-size: var(--text-xs);
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--text-faint);
-  font-variant-numeric: tabular-nums;
-}
-
 /* ---------- Native select (kept accessible, visually restyled) ---------- */
 .native-select {
   appearance: none;

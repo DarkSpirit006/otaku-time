@@ -80,7 +80,7 @@ export function eventCard(entry, prefs, opts = {}) {
   const titleText = query ? highlight(title, query) : esc(title);
   const timeFull = airingEpoch !== null ? airingTime(airingEpoch, prefs.timezone, prefs.hour12) : "";
 
-  return `<article class="card">
+  return `<article class="card" data-eid="e${entry.eventId ?? entry.id ?? `x${media.id}`}">
     <button class="card__open" data-action="detail" data-id="${media.id}" aria-label="Details for ${esc(title)}"></button>
     <div class="card__poster-wrap">
       ${posterMarkup(media, query)}
@@ -139,7 +139,7 @@ export function watchlistCard(item, prefs) {
       }
       <div class="card__progress">
         <span class="card__progress-text ${complete ? "is-complete" : ""}">
-          <span>${total !== null ? `Watched ${watched}/${total}` : `Watched ${watched}`}</span>
+          <span><span class="card__progress-word">Watched </span>${total !== null ? `${watched}/${total}` : watched}</span>
           <span class="progress-mini" aria-hidden="true">
             <span class="progress-mini__fill" style="--progress: ${
               total ? Math.round((watched / total) * 100) : 0
@@ -153,11 +153,15 @@ export function watchlistCard(item, prefs) {
       </div>
     </div>`;
 
-  return `<article class="card ${complete ? "is-complete" : "is-tracked"}">
+  // Badge reflects real progress: unstarted titles are NEW (not "EP 1"),
+  // in-progress shows the next episode to watch, finished shows DONE.
+  const badge = complete ? "DONE" : watched > 0 ? `EP ${watched + 1}` : "NEW";
+
+  return `<article class="card ${complete ? "is-complete" : "is-tracked"}" data-eid="w${item.id}">
     <button class="card__open" data-action="detail" data-id="${item.id}" aria-label="Details for ${esc(title)}"></button>
     <div class="card__poster-wrap">
       ${posterMarkup(mediaLike, "")}
-      <span class="card__ep">${complete ? "DONE" : `EP ${watched + 1}`}</span>
+      <span class="card__ep">${badge}</span>
       <button class="save-btn card__save ${saved ? "is-saved" : ""}" data-action="save" data-id="${item.id}"
         aria-label="Remove ${esc(title)} from watchlist">${icon("check")}</button>
     </div>
@@ -181,7 +185,7 @@ export function timelineRow(entry, prefs) {
     : "";
   const fullTime = airingTime(entry.airingAt, prefs.timezone, prefs.hour12);
 
-  return `<article class="row">
+  return `<article class="row" data-eid="e${entry.eventId ?? entry.id ?? `x${media.id}`}">
     <div class="row__poster">
       ${image}
       <button class="row__open" data-action="detail" data-id="${media.id}" aria-label="Details for ${esc(title)}"></button>
@@ -191,11 +195,11 @@ export function timelineRow(entry, prefs) {
       <p class="row__meta">
         <span class="row__ep">Episode ${entry.episode}</span>
         <span aria-hidden="true">·</span>
-        <span>${esc(fullTime)}</span>
+        <span class="row__time">${esc(fullTime)}</span>
         ${Number.isInteger(media.averageScore) && media.averageScore > 0 ? `<span aria-hidden="true">·</span><span>${media.averageScore}%</span>` : ""}
       </p>
     </div>
-    <p class="row__ago ${agoSeconds < 3600 ? "is-recent" : ""}" data-countdown data-epoch="${entry.airingAt}" data-duration="${media.duration ?? 0}">
+    <p class="row__ago ${agoSeconds >= 0 && agoSeconds < 3600 ? "is-recent" : ""}" data-countdown data-epoch="${entry.airingAt}" data-duration="${media.duration ?? 0}">
       ${esc(countdown(entry.airingAt, media.duration, nowSeconds))}
     </p>
     <div class="row__actions">

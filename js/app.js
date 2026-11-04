@@ -105,7 +105,6 @@ function renderKey() {
       search.warning
     );
   } else if (section === "watchlist") {
-    parts.push(JSON.stringify(features.watchlist.filters));
     parts.push(
       watchlist
         .all()
@@ -116,7 +115,6 @@ function renderKey() {
   } else {
     const kind = section === "recent" ? "recent" : "upcoming";
     const state = schedules[kind];
-    parts.push(JSON.stringify(features[section].filters));
     parts.push(
       state.events.length,
       state.page,
@@ -132,6 +130,8 @@ function renderKey() {
   return parts.join("|");
 }
 
+let lastRenderedIds = new Set();
+
 function render() {
   const key = renderKey();
   if (key === lastRenderKey) return;
@@ -140,8 +140,13 @@ function render() {
   const animate = animateNext;
   ctx = makeContext(animate);
 
+  const app = qs("#app");
+  const previousIds = lastRenderedIds;
+  const scrollY = window.scrollY;
+  const hasQuery = Boolean(query.trim());
+
   // Search view takes over the full content area.
-  if (query.trim()) {
+  if (hasQuery) {
     updateNav();
     updateTitle("Search");
     searchFeature.render(ctx);
@@ -151,6 +156,26 @@ function render() {
     updateNav();
     updateTitle(SECTION_TITLES[section] || "Upcoming");
   }
+
+  // innerHTML swaps collapse the document for a frame, which yanks the
+  // scroll position while the user is mid-list — restore it synchronously
+  // so the repaint is invisible.
+  if (scrollY > 0 && window.scrollY !== scrollY) {
+    window.scrollTo(0, scrollY);
+  }
+
+  // Cards that weren't on screen before (pagination, imports) fade up
+  // gently instead of popping. Search stays instant while typing.
+  if (!animate && !hasQuery && app && previousIds.size > 0) {
+    const fresh = qsa("[data-eid]", app).filter((el) => !previousIds.has(el.dataset.eid));
+    fresh.forEach((el, index) => {
+      el.style.animationDelay = `${Math.min(index, 6) * 45}ms`;
+      el.classList.add("item-in");
+    });
+  }
+  lastRenderedIds = app
+    ? new Set(qsa("[data-eid]", app).map((el) => el.dataset.eid))
+    : new Set();
 
   // Skeleton frames don't consume the pending entrance animation —
   // real content should still fade in when it arrives.
@@ -510,15 +535,6 @@ function onClick(event) {
   }
 }
 
-function onChange(event) {
-  const filter = event.target.closest?.("[data-filter]");
-  if (filter && !query.trim()) {
-    const feature = features[section];
-    feature?.handleFilter?.(filter.dataset.filter, filter.value, ctx);
-    return;
-  }
-}
-
 function bindChrome() {
   for (const button of qsa(".js-refresh")) {
     button.addEventListener("click", () => refreshCurrent());
@@ -543,7 +559,15 @@ function bindChrome() {
       active instanceof HTMLSelectElement ||
       active?.isContentEditable;
 
-    if (event.key === "/" && !typing && !event.metaKey && !event.ctrlKey && !event.altKey) {
+    const dialogOpen = Boolean(qs("#detail-dialog")?.open || qs("#settings-dialog")?.open);
+    if (
+      event.key === "/" &&
+      !typing &&
+      !dialogOpen &&
+      !event.metaKey &&
+      !event.ctrlKey &&
+      !event.altKey
+    ) {
       event.preventDefault();
       input?.focus();
       input?.select();
@@ -653,8 +677,23 @@ async function init() {
   bindStorage();
   bindLifecycle();
 
-  document.getElementById("app")?.addEventListener("click", onClick);
-  document.getElementById("app")?.addEventListener("change", onChange);
+  const appRoot = document.getElementById("app");
+  appRoot?.addEventListener("click", onClick);
+
+  // Poster fallback: if art fails to load, hide the broken image and
+  // reveal the title placeholder underneath (error/load don't bubble —
+  // capture catches them from descendant <img> nodes).
+  appRoot?.addEventListener(
+    "error",
+    (event) => {
+      const img = event.target;
+      if (!(img instanceof HTMLImageElement)) return;
+      img.classList.add("is-broken");
+      const fallback = img.parentElement?.querySelector(".card__poster-fallback");
+      if (fallback) fallback.hidden = false;
+    },
+    true
+  );
 
   // Cross-schedule updates → refresh the visible view + status.
   onScheduleChange((kind) => {

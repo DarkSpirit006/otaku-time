@@ -100,6 +100,16 @@
   display: none;
 }
 
+.card__poster.is-broken {
+  visibility: hidden;
+}
+
+.spotlight__poster img.is-broken,
+.detail-poster img.is-broken,
+.row__poster img.is-broken {
+  visibility: hidden;
+}
+
 .card__poster-fallback svg {
   width: 34px;
   height: 34px;
@@ -489,15 +499,6 @@
   display: grid;
   place-items: center;
   padding: var(--sp-8) 0 var(--sp-4);
-}
-
-.load-spinner {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  border: 2.5px solid var(--border);
-  border-top-color: var(--accent);
-  animation: spin 0.85s linear infinite;
 }
 
 .loading-more {

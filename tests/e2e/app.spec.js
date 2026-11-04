@@ -64,21 +64,25 @@ test.describe("boot & sections", () => {
     await expect(page.locator(".card")).toHaveCount(3);
   });
 
-  test("filters update the visible schedule", async ({ page }) => {
+  test("schedule ships unfiltered, in chronological order", async ({ page }) => {
     const events = defaultEvents();
     await mockAniList(page, standardSchedules(events));
     await page.goto("/");
     await expect(page.locator(".card")).toHaveCount(3);
 
-    await page.selectOption("#filter-format", "OVA");
-    await expect(page.locator(".card")).toHaveCount(1);
-    await expect(page.locator(".card__title")).toContainText("Gamma Show");
-    await expect(page.locator("#filter-count")).toContainText("1 episode");
+    // No filter UI anywhere
+    await expect(page.locator(".filter-bar")).toHaveCount(0);
+    await expect(page.locator("#app .select__trigger")).toHaveCount(0);
 
-    await page.selectOption("#filter-format", "all");
-    await page.selectOption("#filter-sort", "title");
-    await expect(page.locator(".card")).toHaveCount(3);
-    await expect(page.locator(".card__title").first()).toContainText("Alpha Show");
+    // Air-time order: +1h, +2h, +3d
+    await expect(page.locator(".card__title")).toHaveText([
+      "Alpha Show",
+      "Beta Show",
+      "Gamma Show",
+    ]);
+
+    // Meta carries the count instead of the old filter bar
+    await expect(page.locator("#section-meta")).toContainText("3 episodes");
   });
 
   test("empty schedule shows a friendly empty state", async ({ page }) => {
@@ -468,64 +472,58 @@ test.describe("performance basics", () => {
 });
 
 test.describe("custom select UI", () => {
-  test("filter select opens on click and commits an option", async ({ page }) => {
-    const events = defaultEvents();
-    await mockAniList(page, standardSchedules(events));
-    await page.goto("/");
-    await expect(page.locator(".card")).toHaveCount(3);
-
-    // Open the custom menu (regression: trigger used to crash with a
-    // "contains of undefined" error and never show the listbox)
-    const trigger = page.locator("#filter-format-trigger");
-    await trigger.click();
-    const menu = page.locator("#filter-format-listbox");
-    await expect(menu).toBeVisible();
-    await expect(trigger).toHaveAttribute("aria-expanded", "true");
-    await expect(menu.locator(".select__option")).toHaveCount(8);
-
-    // Pick "OVA"
-    await menu.locator('.select__option[data-value="OVA"]').click();
-    await expect(menu).toBeHidden();
-    await expect(trigger).toHaveAttribute("aria-expanded", "false");
-    await expect(trigger.locator(".select__value")).toHaveText("OVA");
-    await expect(page.locator("#filter-format")).toHaveValue("OVA");
-    await expect(page.locator(".card")).toHaveCount(1);
-    await expect(page.locator(".card__title")).toContainText("Gamma Show");
-
-    // Escape path
-    await trigger.click();
-    await expect(menu).toBeVisible();
-    await page.keyboard.press("Escape");
-    await expect(menu).toBeHidden();
-  });
-
-  test("settings selects use the same interactive menu", async ({ page }) => {
+  test("settings select opens, commits, and closes every way", async ({ page }) => {
     await mockAniList(page, standardSchedules(defaultEvents()));
     await page.goto("/");
     await page.locator(".js-settings-open").first().click();
     await expect(page.locator("#settings-dialog")).toBeVisible();
 
+    // Open: listbox visible with options, aria-expanded flips
     const trigger = page.locator("#setting-timezone-trigger");
     await trigger.click();
     const menu = page.locator("#setting-timezone-listbox");
     await expect(menu).toBeVisible();
+    await expect(trigger).toHaveAttribute("aria-expanded", "true");
     await expect(menu.locator(".select__option").first()).toBeVisible();
 
+    // Commit a different zone
     const original = await page.locator("#setting-timezone").inputValue();
-    // Choose a different zone than the one currently selected
     await menu.locator('.select__option[data-value="Asia/Tokyo"]').click();
     await expect(page.locator("#setting-timezone")).toHaveValue("Asia/Tokyo");
     await expect(trigger.locator(".select__value")).toContainText("Asia/Tokyo");
     expect(original).not.toBe("Asia/Tokyo");
+    await expect(menu).toBeHidden();
+
+    // Escape closes without committing
+    const clockTrigger = page.locator("#setting-hour12-trigger");
+    await clockTrigger.click();
+    const clockMenu = page.locator("#setting-hour12-listbox");
+    await expect(clockMenu).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(clockMenu).toBeHidden();
+    await expect(page.locator("#setting-hour12")).toHaveValue("12");
+
+    // Clicking outside closes the menu
+    await clockTrigger.click();
+    await expect(clockMenu).toBeVisible();
+    await page.mouse.click(40, 400);
+    await expect(clockMenu).toBeHidden();
   });
 
-  test("clicking outside closes the menu", async ({ page }) => {
+  test("keyboard: arrows navigate options and Enter commits", async ({ page }) => {
     await mockAniList(page, standardSchedules(defaultEvents()));
     await page.goto("/");
-    await page.locator("#filter-date-trigger").click();
-    await expect(page.locator("#filter-date-listbox")).toBeVisible();
-    await page.mouse.click(700, 700);
-    await expect(page.locator("#filter-date-listbox")).toBeHidden();
+    await page.locator(".js-settings-open").first().click();
+    const clockTrigger = page.locator("#setting-hour12-trigger");
+    await clockTrigger.focus();
+    await page.keyboard.press("Enter"); // opens
+    const clockMenu = page.locator("#setting-hour12-listbox");
+    await expect(clockMenu).toBeVisible();
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("Enter"); // commits the active option
+    await expect(clockMenu).toBeHidden();
+    await expect(page.locator("#setting-hour12")).toHaveValue("24");
+    await expect(clockTrigger).toHaveAttribute("aria-expanded", "false");
   });
 });
 
