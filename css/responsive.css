@@ -1,0 +1,435 @@
+/* ============================================================
+   Otaku Time — responsive breakpoints + mobile tabbar
+   Desktop-first: base styles assume ≥961px (sidebar layout).
+   ============================================================ */
+
+/* ---------- Defaults that only apply on small screens ---------- */
+.topbar__brand {
+  display: none;
+}
+
+.topbar__extras {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-left: auto;
+}
+
+.topbar__sync,
+.topbar__action {
+  display: none;
+}
+
+/* ============================================================
+   ≤ 960px — sidebar becomes a bottom tab bar
+   ============================================================ */
+@media (max-width: 960px) {
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  /* Two-row topbar: brand + controls, then full-width search */
+  .topbar {
+    flex-wrap: wrap;
+    height: auto;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    row-gap: 10px;
+  }
+
+  .topbar__brand {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    color: var(--text);
+    text-decoration: none;
+    order: 1;
+  }
+
+  .topbar__brand:hover {
+    text-decoration: none;
+  }
+
+  .topbar__brand .brand__mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+  }
+
+  .topbar__brand .brand__mark svg {
+    width: 21px;
+    height: 21px;
+  }
+
+  .topbar__brand-name {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+  }
+
+  .topbar__extras {
+    order: 2;
+    gap: var(--sp-2);
+  }
+
+  .topbar__sync {
+    display: flex;
+    padding: 5px 9px;
+  }
+
+  .topbar__sync .sync__text {
+    display: none;
+  }
+
+  .topbar__sync .sync__dot {
+    width: 9px;
+    height: 9px;
+  }
+
+  .topbar__action {
+    display: grid;
+    width: 36px;
+    height: 36px;
+  }
+
+  .topbar__action svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .clock {
+    order: 3;
+    margin-left: auto;
+  }
+
+  .search {
+    order: 4;
+    flex-basis: 100%;
+    max-width: none;
+  }
+
+  .search input {
+    height: 44px;
+    font-size: 16px; /* prevents iOS zoom-on-focus */
+  }
+
+  /* Bottom tab bar */
+  .tabbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: var(--z-tabbar);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    height: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--surface-glass);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--border);
+  }
+
+  .tabbar__indicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 33.333%;
+    height: 3px;
+    background: var(--brand-gradient);
+    border-radius: 0 0 3px 3px;
+    transform: translateX(var(--indicator-x, 0));
+    transition: transform var(--dur-base) var(--ease-spring);
+    pointer-events: none;
+  }
+
+  .tabbar__link {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    color: var(--text-faint);
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-decoration: none;
+    transition: color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .tabbar__link svg {
+    width: 21px;
+    height: 21px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform var(--dur-base) var(--ease-spring);
+  }
+
+  .tabbar__link:active {
+    transform: scale(0.94);
+  }
+
+  .tabbar__link.is-active {
+    color: var(--accent-bright);
+  }
+
+  .tabbar__link.is-active svg {
+    transform: translateY(-2px) scale(1.08);
+  }
+
+  .tabbar__count {
+    position: absolute;
+    top: 5px;
+    left: calc(50% + 8px);
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    border-radius: var(--radius-full);
+    background: var(--pink);
+    color: #fff;
+    font-size: 0.62rem;
+    font-weight: 700;
+    line-height: 17px;
+    text-align: center;
+  }
+
+  .tabbar__count[hidden] {
+    display: none;
+  }
+
+  /* Content clears the tab bar */
+  .content {
+    padding-bottom: calc(var(--tabbar-h) + var(--sp-10));
+  }
+
+  .toast {
+    bottom: calc(var(--tabbar-h) + var(--sp-4) + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Footer sits above tab bar visually within flow — keep normal */
+  .footer {
+    padding-bottom: calc(var(--tabbar-h) + var(--sp-4));
+  }
+}
+
+/* ============================================================
+   ≤ 860px — spotlight + detail dialog get tighter
+   ============================================================ */
+@media (max-width: 860px) {
+  .spotlight {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-4);
+  }
+
+  .spotlight__media {
+    order: -1;
+    justify-content: flex-start;
+  }
+
+  .spotlight__poster {
+    width: 118px;
+    transform: none;
+  }
+
+  .detail-body {
+    grid-template-columns: 140px minmax(0, 1fr);
+    gap: var(--sp-4);
+    padding: 0 var(--sp-4) var(--sp-5);
+    margin-top: -56px;
+  }
+
+  .detail-main {
+    padding-top: 64px;
+  }
+}
+
+/* ============================================================
+   ≤ 640px — compact phones
+   ============================================================ */
+@media (max-width: 640px) {
+  .card-grid,
+  .skeleton-grid {
+    grid-template-columns: repeat(auto-fill, minmax(142px, 1fr));
+    gap: var(--sp-3);
+  }
+
+  .clock__date {
+    display: none;
+  }
+
+  .search__kbd {
+    display: none;
+  }
+
+  .search input {
+    padding-right: 46px;
+  }
+
+  .filter-bar {
+    padding: var(--sp-3);
+    gap: var(--sp-2);
+  }
+
+  .filter {
+    min-width: 0;
+    flex: 1 1 calc(50% - var(--sp-2));
+  }
+
+  .filter-bar__count {
+    flex-basis: 100%;
+    margin-left: 0;
+    padding-bottom: 0;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Rows: drop absolute time, keep relative "ago" */
+  .row {
+    grid-template-columns: 46px minmax(0, 1fr) auto;
+    gap: var(--sp-3);
+    padding: var(--sp-2);
+  }
+
+  .row__poster {
+    width: 46px;
+  }
+
+  .row__ago {
+    grid-column: 2;
+    grid-row: 2;
+    text-align: left;
+    margin-top: -6px;
+  }
+
+  .row__actions {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    flex-direction: column;
+  }
+
+  .row__title {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .section-head {
+    margin-bottom: var(--sp-4);
+  }
+
+  /* Dialogs become bottom sheets */
+  .dialog {
+    max-width: 100%;
+    width: 100%;
+    margin: auto 0 0;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    border-bottom: none;
+    max-height: 93dvh;
+    transform: translateY(40px);
+  }
+
+  .dialog[open] {
+    transform: none;
+  }
+
+  @starting-style {
+    .dialog[open] {
+      transform: translateY(40px);
+    }
+  }
+
+  .dialog.is-closing {
+    transform: translateY(30px);
+  }
+
+  .settings-head {
+    padding: var(--sp-5) var(--sp-4) var(--sp-3);
+  }
+
+  .settings-scroll {
+    padding: var(--sp-4);
+    max-height: calc(93dvh - 84px);
+  }
+
+  .detail-banner {
+    height: 130px;
+  }
+
+  .detail-body {
+    grid-template-columns: 104px minmax(0, 1fr);
+    margin-top: -46px;
+  }
+
+  .detail-main {
+    padding-top: 52px;
+  }
+
+  .detail-actions {
+    gap: var(--sp-2);
+  }
+
+  .detail-progress {
+    flex-wrap: wrap;
+  }
+
+  .detail-external {
+    margin-left: 0;
+  }
+}
+
+/* ============================================================
+   ≤ 420px — very narrow phones
+   ============================================================ */
+@media (max-width: 420px) {
+  .topbar__brand-name {
+    display: none;
+  }
+
+  .card-grid,
+  .skeleton-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stat {
+    padding: var(--sp-3);
+  }
+
+  .stat__value {
+    font-size: 1.35rem;
+  }
+
+  .spotlight__actions .btn {
+    flex: 1;
+  }
+
+  .footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* ---------- Very short landscape phones: keep dialog usable ---------- */
+@media (max-height: 520px) and (orientation: landscape) {
+  .dialog {
+    max-height: 94dvh;
+  }
+
+  .detail-banner {
+    height: 96px;
+  }
+}

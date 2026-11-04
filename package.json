@@ -1,0 +1,16 @@
+{
+  "name": "otaku-time",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Otaku Time — a local-first anime schedule and watchlist tracker powered by AniList.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/unit/",
+    "test:e2e": "playwright test",
+    "serve": "node tests/serve.mjs",
+    "screenshots": "node tests/screenshots.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1"
+  }
+}

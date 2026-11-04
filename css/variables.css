@@ -1,0 +1,207 @@
+/* ============================================================
+   Otaku Time — design tokens, themes, fonts, motion primitives
+   ============================================================ */
+
+/* ---------- Fonts (self-hosted, latin subsets) ---------- */
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url("../assets/fonts/space-grotesk-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../assets/fonts/inter-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+
+/* ---------- Tokens ---------- */
+:root {
+  /* Typography */
+  --font-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-md: 1rem;
+  --text-lg: 1.1875rem;
+  --text-xl: clamp(1.4rem, 1.1rem + 1.2vw, 1.9rem);
+  --text-2xl: clamp(1.75rem, 1.3rem + 2vw, 2.5rem);
+
+  /* Spacing scale */
+  --sp-1: 0.25rem;
+  --sp-1-5: 0.375rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-3-5: 0.875rem;
+  --sp-4: 1rem;
+  --sp-5: 1.25rem;
+  --sp-6: 1.5rem;
+  --sp-8: 2rem;
+  --sp-10: 2.5rem;
+  --sp-12: 3rem;
+  --sp-16: 4rem;
+
+  /* Radii */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-full: 999px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --dur-fast: 140ms;
+  --dur-base: 240ms;
+  --dur-slow: 420ms;
+
+  /* Layout */
+  --sidebar-w: 252px;
+  --topbar-h: 64px;
+  --content-max: 1240px;
+  --tabbar-h: 62px;
+
+  /* Brand */
+  --brand-gradient: linear-gradient(135deg, #6d5efc 0%, #b45cf0 50%, #ff6b8b 100%);
+  --brand-gradient-soft: linear-gradient(135deg, rgba(109, 94, 252, 0.16), rgba(255, 107, 139, 0.14));
+
+  /* Stacking */
+  --z-sidebar: 40;
+  --z-topbar: 30;
+  --z-tabbar: 45;
+  --z-dialog: 60;
+  --z-toast: 70;
+}
+
+/* ---------- Dark theme (default) ---------- */
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #0b0d12;
+  --bg-ambient-1: rgba(109, 94, 252, 0.13);
+  --bg-ambient-2: rgba(255, 107, 139, 0.09);
+  --bg-ambient-3: rgba(180, 92, 240, 0.07);
+
+  --surface-1: #12151d;
+  --surface-2: #171b26;
+  --surface-3: #1e2331;
+  --surface-glass: rgba(18, 21, 29, 0.82);
+
+  --border: rgba(148, 163, 184, 0.16);
+  --border-strong: rgba(148, 163, 184, 0.3);
+  --border-accent: rgba(139, 124, 246, 0.45);
+
+  --text: #e9ebf4;
+  --text-dim: #a2a9bd;
+  --text-faint: #6d7488;
+  --text-on-accent: #ffffff;
+
+  --accent: #8b7cf6;
+  --accent-bright: #a596ff;
+  --accent-ink: #c3baff;
+  --accent-contrast: #6d5efc;
+  --pink: #ff6b8b;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #fb7185;
+
+  --accent-soft: rgba(139, 124, 246, 0.14);
+  --accent-soft-hover: rgba(139, 124, 246, 0.22);
+  --pink-soft: rgba(255, 107, 139, 0.14);
+  --danger-soft: rgba(251, 113, 133, 0.12);
+  --success-soft: rgba(74, 222, 128, 0.12);
+  --warning-soft: rgba(251, 191, 36, 0.12);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 6px 24px -6px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 24px 56px -16px rgba(0, 0, 0, 0.65);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -12px rgba(0, 0, 0, 0.5);
+  --shadow-card-hover: 0 2px 4px rgba(0, 0, 0, 0.4), 0 18px 42px -14px rgba(0, 0, 0, 0.62);
+
+  --skeleton-a: #1a1e2a;
+  --skeleton-b: #232838;
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4.5px var(--accent);
+  --scrim: rgba(5, 6, 10, 0.66);
+}
+
+/* ---------- Light theme ---------- */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: #f6f6fa;
+  --bg-ambient-1: rgba(109, 94, 252, 0.1);
+  --bg-ambient-2: rgba(255, 107, 139, 0.08);
+  --bg-ambient-3: rgba(180, 92, 240, 0.06);
+
+  --surface-1: #ffffff;
+  --surface-2: #f2f2f8;
+  --surface-3: #e9e9f2;
+  --surface-glass: rgba(255, 255, 255, 0.85);
+
+  --border: rgba(30, 34, 54, 0.12);
+  --border-strong: rgba(30, 34, 54, 0.24);
+  --border-accent: rgba(109, 94, 252, 0.4);
+
+  --text: #171a24;
+  --text-dim: #565d70;
+  --text-faint: #878ea3;
+  --text-on-accent: #ffffff;
+
+  --accent: #6d5efc;
+  --accent-bright: #5a4be8;
+  --accent-ink: #5144d8;
+  --accent-contrast: #5a4be8;
+  --pink: #e5486f;
+  --success: #16a34a;
+  --warning: #b45309;
+  --danger: #e11d48;
+
+  --accent-soft: rgba(109, 94, 252, 0.1);
+  --accent-soft-hover: rgba(109, 94, 252, 0.17);
+  --pink-soft: rgba(229, 72, 111, 0.1);
+  --danger-soft: rgba(225, 29, 72, 0.09);
+  --success-soft: rgba(22, 163, 74, 0.1);
+  --warning-soft: rgba(180, 83, 9, 0.1);
+
+  --shadow-sm: 0 1px 2px rgba(24, 26, 40, 0.06);
+  --shadow-md: 0 8px 24px -8px rgba(24, 26, 40, 0.14);
+  --shadow-lg: 0 24px 56px -18px rgba(24, 26, 40, 0.22);
+  --shadow-card: 0 1px 2px rgba(24, 26, 40, 0.05), 0 10px 28px -16px rgba(24, 26, 40, 0.18);
+  --shadow-card-hover: 0 2px 4px rgba(24, 26, 40, 0.06), 0 20px 44px -18px rgba(24, 26, 40, 0.3);
+
+  --skeleton-a: #e7e7ef;
+  --skeleton-b: #f1f1f7;
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4.5px var(--accent);
+  --scrim: rgba(20, 22, 34, 0.42);
+}
+
+/* ---------- Shared primitives ---------- */
+
+.brand-gradient-text {
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Focus visibility everywhere */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-sm);
+}
