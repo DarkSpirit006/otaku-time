@@ -99,13 +99,13 @@ export function render(ctx) {
   });
 
   if (state.loading && !events.length) {
-    app.innerHTML = `${head}<div class="view-enter">${skeletonGrid(6)}</div>`;
+    app.innerHTML = `${head}<div class="${ctx.animate ? "view-enter" : ""}">${skeletonGrid(6)}</div>`;
     return;
   }
 
   if (state.error && !events.length) {
     app.innerHTML = `${head}
-      <div class="view-enter">
+      <div class="${ctx.animate ? "view-enter" : ""}">
         ${notice(state.error, "danger")}
         ${emptyState({
           icon: "clock",
@@ -119,7 +119,7 @@ export function render(ctx) {
 
   if (!filtered.length) {
     app.innerHTML = `${head}${notice(state.error, state.error ? "danger" : "warning")}
-      <div class="view-enter">
+      <div class="${ctx.animate ? "view-enter" : ""}">
         ${emptyState({
           icon: "clock",
           title: events.length ? "No episodes in this window" : "Nothing aired recently",
@@ -176,7 +176,7 @@ export function render(ctx) {
     : `<p class="loading-more">End of the available history window.</p>`;
 
   app.innerHTML = `
-    <div class="timeline view-enter">
+    <div class="timeline ${ctx.animate ? "view-enter" : ""}">
       ${head}
       ${notice(state.error, state.error ? "danger" : "warning")}
       ${state.warning ? notice(state.warning, "warning") : ""}
@@ -190,7 +190,7 @@ export function render(ctx) {
 
 export function handleFilter(type, value, ctx) {
   if (type in filters) filters[type] = value;
-  render(ctx);
+  (ctx.render ? ctx.render() : render(ctx));
   ctx.announce?.(`Filter updated: ${value}`);
 }
 
@@ -199,15 +199,14 @@ export function handleAction(name, el, ctx) {
     filters.date = "48h";
     filters.format = "all";
     filters.sort = "time";
-    render(ctx);
+    (ctx.render ? ctx.render() : render(ctx));
     return true;
   }
   return false;
 }
 
-export function onActivate(ctx) {
+export function onActivate() {
   if (needsLoad("recent")) {
     loadSchedule("recent", { reset: getSchedule("recent").events.length > 0 }).catch(() => {});
   }
-  render(ctx);
 }

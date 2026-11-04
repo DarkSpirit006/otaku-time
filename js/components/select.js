@@ -35,25 +35,23 @@ function renderOptions(select, listbox, activeIndex) {
   });
 }
 
-function closeWrapper(wrapper, { returnFocus = false } = {}) {
-  if (!wrapper.classList.contains("is-open")) return;
-  wrapper.classList.remove("is-open");
-  wrapper.listbox.hidden = true;
-  wrapper.trigger.setAttribute("aria-expanded", "false");
-  const active = wrapper.listbox.querySelector(".select__option.is-active");
+function closeWrapper(state, { returnFocus = false } = {}) {
+  const el = state.wrapper;
+  if (!el.classList.contains("is-open")) return;
+  el.classList.remove("is-open");
+  state.listbox.hidden = true;
+  state.trigger.setAttribute("aria-expanded", "false");
+  const active = state.listbox.querySelector(".select__option.is-active");
   if (active) active.classList.remove("is-active");
-  if (returnFocus) wrapper.trigger.focus();
+  if (returnFocus) state.trigger.focus();
 }
 
-function openWrapper(wrapper) {
-  const { select, trigger, listbox } = wrapper;
-  for (const other of wrappers) {
-    if (other !== wrapper) closeWrapper(other);
-  }
-  const options = qsa("option", select);
+function openWrapper(state) {
+  const { select, trigger, listbox, wrapper: el } = state;
+  closeAllSelects(state);
   const activeIndex = Math.max(0, select.selectedIndex);
   renderOptions(select, listbox, activeIndex);
-  wrapper.classList.add("is-open");
+  el.classList.add("is-open");
   listbox.hidden = false;
   trigger.setAttribute("aria-expanded", "true");
   const active = listbox.querySelectorAll(".select__option")[activeIndex];
@@ -61,22 +59,22 @@ function openWrapper(wrapper) {
   active?.scrollIntoView({ block: "nearest" });
 }
 
-function commit(wrapper, index) {
-  const { select } = wrapper;
+function commit(state, index) {
+  const { select } = state;
   const option = select.options[index];
   if (!option || option.disabled) return;
   if (select.selectedIndex !== index) {
     select.selectedIndex = index;
     select.dispatchEvent(new Event("change", { bubbles: true }));
   }
-  syncTrigger(wrapper);
-  closeWrapper(wrapper, { returnFocus: true });
+  syncTrigger(state);
+  closeWrapper(state, { returnFocus: true });
 }
 
 /** Refresh the trigger text after the native select changed. */
-export function syncTrigger(wrapper) {
-  const label = wrapper.trigger.querySelector(".select__value");
-  const option = wrapper.select.options[wrapper.select.selectedIndex];
+export function syncTrigger(state) {
+  const label = state.trigger.querySelector(".select__value");
+  const option = state.select.options[state.select.selectedIndex];
   if (label && option) label.textContent = optionLabel(option);
 }
 
@@ -152,7 +150,7 @@ function enhance(select) {
   };
 
   trigger.addEventListener("click", () => {
-    if (wrapper.classList.contains("is-open")) closeWrapper(state, { returnFocus: true });
+    if (state.wrapper.classList.contains("is-open")) closeWrapper(state, { returnFocus: true });
     else openWrapper(state);
   });
 
@@ -222,21 +220,36 @@ function enhance(select) {
     }
   });
 
+  bindGlobalHandlers();
+  return state;
+}
+
+let globalBound = false;
+function bindGlobalHandlers() {
+  if (globalBound) return;
+  globalBound = true;
   document.addEventListener(
     "pointerdown",
     (event) => {
-      if (wrapper.classList.contains("is-open") && !wrapper.contains(event.target)) {
-        closeWrapper(state);
+      for (const state of [...wrappers]) {
+        if (!state.select.isConnected) {
+          wrappers.delete(state);
+          continue;
+        }
+        if (state.wrapper.classList.contains("is-open") && !state.wrapper.contains(event.target)) {
+          closeWrapper(state);
+        }
       }
     },
     true
   );
-
-  return state;
 }
 
 /** Enhance all currently-unenhanced native selects under root. */
 export function enhanceSelects(root = document) {
+  for (const state of [...wrappers]) {
+    if (!state.select.isConnected) wrappers.delete(state);
+  }
   for (const select of qsa("select", root)) enhance(select);
 }
 
@@ -255,7 +268,13 @@ export function observeSelects(root = document.body) {
   return () => observer.disconnect();
 }
 
-/** Close every open custom select. */
-export function closeAllSelects() {
-  for (const wrapper of wrappers) closeWrapper(wrapper);
+/** Close every open custom select (optionally except one). */
+export function closeAllSelects(except = null) {
+  for (const state of [...wrappers]) {
+    if (!state.select.isConnected) {
+      wrappers.delete(state);
+      continue;
+    }
+    if (state !== except) closeWrapper(state);
+  }
 }

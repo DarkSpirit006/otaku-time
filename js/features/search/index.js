@@ -48,21 +48,21 @@ export function render(ctx) {
   });
 
   if (error) {
-    app.innerHTML = `<div class="view-enter">
+    app.innerHTML = `<div class="${ctx.animate ? "view-enter" : ""}">
       ${head}
       ${notice(error, "danger")}
-      ${results.length ? status + grid(results, prefs, query) : ""}
+      ${results.length ? status + grid(results, prefs, query, ctx) : ""}
     </div>`;
     return;
   }
 
   if (!results.length && loading) {
-    app.innerHTML = `<div class="view-enter">${head}${status}</div>`;
+    app.innerHTML = `<div class="${ctx.animate ? "view-enter" : ""}">${head}${status}</div>`;
     return;
   }
 
   if (!results.length) {
-    app.innerHTML = `<div class="view-enter">
+    app.innerHTML = `<div class="${ctx.animate ? "view-enter" : ""}">
       ${head}
       ${warning ? notice(warning, "warning") : ""}
       ${emptyState({
@@ -74,15 +74,15 @@ export function render(ctx) {
     return;
   }
 
-  app.innerHTML = `<div class="view-enter">
+  app.innerHTML = `<div class="${ctx.animate ? "view-enter" : ""}">
     ${head}
     ${warning ? notice(warning, "warning") : ""}
     ${status}
-    ${grid(results, prefs, query)}
+    ${grid(results, prefs, query, ctx)}
   </div>`;
 }
 
-function grid(results, prefs, query) {
+function grid(results, prefs, query, ctx) {
   const cards = results
     .map((media, index) =>
       eventCard({ media }, prefs, { query }).replace(
@@ -91,5 +91,5 @@ function grid(results, prefs, query) {
       )
     )
     .join("");
-  return `<div class="card-grid stagger-in">${cards}</div>`;
+  return `<div class="card-grid${ctx.animate ? " stagger-in" : ""}">${cards}</div>`;
 }

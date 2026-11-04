@@ -466,3 +466,148 @@ test.describe("performance basics", () => {
     expect(cached).toBe(true);
   });
 });
+
+test.describe("custom select UI", () => {
+  test("filter select opens on click and commits an option", async ({ page }) => {
+    const events = defaultEvents();
+    await mockAniList(page, standardSchedules(events));
+    await page.goto("/");
+    await expect(page.locator(".card")).toHaveCount(3);
+
+    // Open the custom menu (regression: trigger used to crash with a
+    // "contains of undefined" error and never show the listbox)
+    const trigger = page.locator("#filter-format-trigger");
+    await trigger.click();
+    const menu = page.locator("#filter-format-listbox");
+    await expect(menu).toBeVisible();
+    await expect(trigger).toHaveAttribute("aria-expanded", "true");
+    await expect(menu.locator(".select__option")).toHaveCount(8);
+
+    // Pick "OVA"
+    await menu.locator('.select__option[data-value="OVA"]').click();
+    await expect(menu).toBeHidden();
+    await expect(trigger).toHaveAttribute("aria-expanded", "false");
+    await expect(trigger.locator(".select__value")).toHaveText("OVA");
+    await expect(page.locator("#filter-format")).toHaveValue("OVA");
+    await expect(page.locator(".card")).toHaveCount(1);
+    await expect(page.locator(".card__title")).toContainText("Gamma Show");
+
+    // Escape path
+    await trigger.click();
+    await expect(menu).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(menu).toBeHidden();
+  });
+
+  test("settings selects use the same interactive menu", async ({ page }) => {
+    await mockAniList(page, standardSchedules(defaultEvents()));
+    await page.goto("/");
+    await page.locator(".js-settings-open").first().click();
+    await expect(page.locator("#settings-dialog")).toBeVisible();
+
+    const trigger = page.locator("#setting-timezone-trigger");
+    await trigger.click();
+    const menu = page.locator("#setting-timezone-listbox");
+    await expect(menu).toBeVisible();
+    await expect(menu.locator(".select__option").first()).toBeVisible();
+
+    const original = await page.locator("#setting-timezone").inputValue();
+    // Choose a different zone than the one currently selected
+    await menu.locator('.select__option[data-value="Asia/Tokyo"]').click();
+    await expect(page.locator("#setting-timezone")).toHaveValue("Asia/Tokyo");
+    await expect(trigger.locator(".select__value")).toContainText("Asia/Tokyo");
+    expect(original).not.toBe("Asia/Tokyo");
+  });
+
+  test("clicking outside closes the menu", async ({ page }) => {
+    await mockAniList(page, standardSchedules(defaultEvents()));
+    await page.goto("/");
+    await page.locator("#filter-date-trigger").click();
+    await expect(page.locator("#filter-date-listbox")).toBeVisible();
+    await page.mouse.click(700, 700);
+    await expect(page.locator("#filter-date-listbox")).toBeHidden();
+  });
+});
+
+test.describe("render discipline (no flashing)", () => {
+  test("saving patches controls in place without repainting the view", async ({ page }) => {
+    const errors = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+
+    await page.addInitScript(() => {
+      window.__paints = 0;
+      const hook = new MutationObserver(() => {
+        const app = document.getElementById("app");
+        if (app && !app.__hooked) {
+          app.__hooked = true;
+          new MutationObserver(() => {
+            window.__paints++;
+          }).observe(app, { childList: true });
+        }
+      });
+      hook.observe(document, { childList: true, subtree: true });
+    });
+    const events = defaultEvents();
+    await mockAniList(page, standardSchedules(events));
+    await page.goto("/");
+    await expect(page.locator(".card")).toHaveCount(3);
+    await expect(page.locator("#app .view-enter")).toBeVisible(); // entrance played
+
+    // Remember the exact entrance node so we can prove it is never recreated.
+    await page.evaluate(() => {
+      window.__entrance = document.querySelector("#app .view-enter");
+      window.__paints = 0;
+    });
+    await page.locator(".card__save").first().click();
+    await expect(page.locator("#toast")).toHaveText(/Saved to watchlist/);
+    await page.waitForTimeout(600);
+    expect(await page.evaluate(() => window.__paints)).toBe(0);
+    expect(
+      await page.evaluate(() => document.querySelector("#app .view-enter") === window.__entrance)
+    ).toBe(true);
+    // Both the clicked card and the nav count reflect the save
+    await expect(page.locator(".card__save").first()).toHaveClass(/is-saved/);
+    await expect(page.locator('.nav__count[data-nav-count]')).toHaveText("1");
+
+    // Section switch → repaint happens exactly once and animates in
+    await page.evaluate(() => {
+      window.__paints = 0;
+    });
+    await page.click('.nav__link[data-nav="watchlist"]');
+    await expect(page.locator("#section-title")).toHaveText("Watchlist");
+    await page.waitForTimeout(400);
+    expect(await page.evaluate(() => window.__paints)).toBe(1);
+    expect(
+      await page.evaluate(() => {
+        const el = document.querySelector("#app .view-enter");
+        return Boolean(el) && el !== window.__entrance; // a fresh animated node
+      })
+    ).toBe(true);
+
+    expect(errors).toEqual([]);
+  });
+
+  test("schedule sync after load does not replay entrance animations", async ({ page }) => {
+    await mockAniList(page, standardSchedules(defaultEvents()));
+    await page.goto("/");
+    await expect(page.locator(".card")).toHaveCount(3);
+    await expect(page.locator("#app .view-enter")).toBeVisible();
+
+    // A manual refresh brings identical schedule data: nothing should be
+    // repainted at all (repaint + animation replay was the visible flashing).
+    await page.evaluate(() => {
+      window.__entrance = document.querySelector("#app .view-enter");
+      window.__paints = 0;
+    });
+    await page.locator(".js-refresh").first().click();
+    await expect(page.locator(".js-sync").first()).toHaveAttribute("data-state", "live", {
+      timeout: 15_000,
+    });
+    await page.waitForTimeout(500);
+    expect(await page.evaluate(() => window.__paints)).toBe(0);
+    expect(
+      await page.evaluate(() => document.querySelector("#app .view-enter") === window.__entrance)
+    ).toBe(true);
+    await expect(page.locator(".card")).toHaveCount(3);
+  });
+});

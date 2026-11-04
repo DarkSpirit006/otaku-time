@@ -94,7 +94,7 @@ export function render(ctx) {
 
   if (watchlist.isCorrupt()) {
     app.innerHTML = `${head}${notice(storedProblem, "danger")}
-      <div class="view-enter">
+      <div class="${ctx.animate ? "view-enter" : ""}">
         ${emptyState({
           icon: "bell",
           title: "Saved data needs attention",
@@ -107,7 +107,7 @@ export function render(ctx) {
 
   if (!all.length) {
     app.innerHTML = `${head}${storedProblem ? notice(storedProblem, "warning") : ""}
-      <div class="view-enter">
+      <div class="${ctx.animate ? "view-enter" : ""}">
         ${emptyState({
           icon: "sparkle",
           title: "Your watchlist is empty",
@@ -120,7 +120,7 @@ export function render(ctx) {
 
   if (!filtered.length) {
     app.innerHTML = `${head}${storedProblem ? notice(storedProblem, "warning") : ""}
-      <div class="view-enter">
+      <div class="${ctx.animate ? "view-enter" : ""}">
         ${emptyState({
           icon: "search",
           title: "Nothing matches this filter",
@@ -142,24 +142,24 @@ export function render(ctx) {
     .join("");
 
   app.innerHTML = `
-    <div class="view-enter">
+    <div class="${ctx.animate ? "view-enter" : ""}">
       ${head}
       ${storedProblem ? notice(storedProblem, "warning") : ""}
       ${statsBlock(all)}
-      <div class="card-grid stagger-in">${cards}</div>
+      <div class="card-grid${ctx.animate ? " stagger-in" : ""}">${cards}</div>
     </div>`;
 }
 
 export function handleFilter(type, value, ctx) {
   if (type in filters) filters[type] = value;
-  render(ctx);
+  (ctx.render ? ctx.render() : render(ctx));
 }
 
 export function handleAction(name, el, ctx) {
   if (name === "clear-filters") {
     filters.date = "all";
     filters.sort = "added";
-    render(ctx);
+    (ctx.render ? ctx.render() : render(ctx));
     return true;
   }
   if (name === "go-upcoming") {
@@ -171,8 +171,4 @@ export function handleAction(name, el, ctx) {
     return true;
   }
   return false;
-}
-
-export function onActivate(ctx) {
-  render(ctx);
 }

@@ -123,13 +123,13 @@ export function render(ctx) {
 
   // First paint: skeleton until we have something to show.
   if (state.loading && !events.length) {
-    app.innerHTML = `${head}${notice(state.error || "", "danger")}<div class="view-enter">${skeletonGrid(8)}</div>`;
+    app.innerHTML = `${head}${notice(state.error || "", "danger")}<div class="${ctx.animate ? "view-enter" : ""}">${skeletonGrid(8)}</div>`;
     return;
   }
 
   if (state.error && !events.length) {
     app.innerHTML = `${head}
-      <div class="view-enter">
+      <div class="${ctx.animate ? "view-enter" : ""}">
         ${notice(state.error, "danger")}
         ${emptyState({
           icon: "calendar",
@@ -158,7 +158,7 @@ export function render(ctx) {
             ? { icon: "calendar", title: "Nothing airs tomorrow", text: "Try widening the date filter." }
             : { icon: "search", title: "No episodes match", text: "Adjust the date or format filter." };
     app.innerHTML = `${head}${notice(state.error, state.error ? "danger" : "warning")}${state.warning ? notice(state.warning, "warning") : ""}
-      <div class="view-enter">${emptyState({ ...emptyCopy, action: `<button class="btn btn--ghost" data-action="clear-filters">Clear filters</button>` })}</div>`;
+      <div class="${ctx.animate ? "view-enter" : ""}">${emptyState({ ...emptyCopy, action: `<button class="btn btn--ghost" data-action="clear-filters">Clear filters</button>` })}</div>`;
     return;
   }
 
@@ -189,7 +189,7 @@ export function render(ctx) {
         : "";
 
       const cards = (subset) =>
-        `<div class="card-grid stagger-in">${subset
+        `<div class="card-grid${ctx.animate ? " stagger-in" : ""}">${subset
           .map((event) => {
             const html = eventCard(event, prefs);
             return html.replace(
@@ -221,7 +221,7 @@ export function render(ctx) {
     : `<p class="loading-more">End of the current schedule window.</p>`;
 
   app.innerHTML = `
-    <div class="view-enter">
+    <div class="${ctx.animate ? "view-enter" : ""}">
       ${head}
       ${notice(state.error, state.error ? "danger" : "warning")}
       ${state.warning ? notice(state.warning, "warning") : ""}
@@ -236,7 +236,7 @@ export function render(ctx) {
 
 export function handleFilter(type, value, ctx) {
   if (type in filters) filters[type] = value;
-  render(ctx);
+  (ctx.render ? ctx.render() : render(ctx));
   ctx.announce?.(`Filter updated: ${value}`);
 }
 
@@ -245,15 +245,14 @@ export function handleAction(name, el, ctx) {
     filters.date = "week";
     filters.format = "all";
     filters.sort = "time";
-    render(ctx);
+    (ctx.render ? ctx.render() : render(ctx));
     return true;
   }
   return false;
 }
 
-export function onActivate(ctx) {
+export function onActivate() {
   if (needsLoad("upcoming")) {
     loadSchedule("upcoming", { reset: getSchedule("upcoming").events.length > 0 }).catch(() => {});
   }
-  render(ctx);
 }

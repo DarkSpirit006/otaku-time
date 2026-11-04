@@ -5,6 +5,7 @@
 
 import { qs, qsa, esc, prefersReducedMotion } from "./utils/dom.js";
 import { titleOf } from "./utils/format.js";
+import { timeAgo } from "./utils/time.js";
 import { rank } from "./utils/search-rank.js";
 
 import { watchlist } from "./storage/watchlist.js";
@@ -60,16 +61,19 @@ let searchGeneration = 0;
    Render context shared with feature modules
    ------------------------------------------------------------ */
 
-function makeContext() {
+function makeContext(animate = false) {
   return {
+    animate,
     prefs: getPrefs,
     query: () => query,
     section: () => section,
     announce: showToast,
     navigate: (target) => navigate(target),
     openSettings: () => openSettings(document.activeElement),
+    render: () => render(),
     watchlistChanged: () => {
       updateCounts(true);
+      syncSaveButtons();
       render();
     },
     scheduleChanged: () => render(),
@@ -80,23 +84,77 @@ let ctx = makeContext();
 
 /* ------------------------------------------------------------
    Rendering
+
+   Every paint goes through render(), which skips work entirely
+   when nothing observable changed (signature below) and only
+   plays entrance animations when animateNext is pending —
+   section switches and first paint, never routine data refreshes.
    ------------------------------------------------------------ */
 
-function render() {
-  ctx = makeContext();
+let lastRenderKey = null;
+let animateNext = true;
 
-  // Search view takes over the whole content area.
+function renderKey() {
+  const parts = [section, query.trim()];
+  if (query.trim()) {
+    const search = searchFeature.state;
+    parts.push(
+      search.results.map((media) => media.id).join(","),
+      search.loading,
+      search.error,
+      search.warning
+    );
+  } else if (section === "watchlist") {
+    parts.push(JSON.stringify(features.watchlist.filters));
+    parts.push(
+      watchlist
+        .all()
+        .map((item) => `${item.id}:${item.watched}:${item.episodes}:${item.createdAt}`)
+        .join(",")
+    );
+    parts.push(watchlist.isCorrupt(), watchlist.storageAvailable());
+  } else {
+    const kind = section === "recent" ? "recent" : "upcoming";
+    const state = schedules[kind];
+    parts.push(JSON.stringify(features[section].filters));
+    parts.push(
+      state.events.length,
+      state.page,
+      state.more,
+      state.loading,
+      state.error,
+      state.warning,
+      state.source
+    );
+  }
+  const prefs = getPrefs();
+  parts.push(prefs.timezone, prefs.hour12);
+  return parts.join("|");
+}
+
+function render() {
+  const key = renderKey();
+  if (key === lastRenderKey) return;
+  lastRenderKey = key;
+
+  const animate = animateNext;
+  ctx = makeContext(animate);
+
+  // Search view takes over the full content area.
   if (query.trim()) {
     updateNav();
     updateTitle("Search");
     searchFeature.render(ctx);
-    return;
+  } else {
+    const feature = features[section] || features.upcoming;
+    feature.render(ctx);
+    updateNav();
+    updateTitle(SECTION_TITLES[section] || "Upcoming");
   }
 
-  const feature = features[section] || features.upcoming;
-  feature.render(ctx);
-  updateNav();
-  updateTitle(SECTION_TITLES[section] || "Upcoming");
+  // Skeleton frames don't consume the pending entrance animation —
+  // real content should still fade in when it arrives.
+  if (animate && !qs("#app .skeleton-card")) animateNext = false;
 }
 
 function updateTitle(label) {
@@ -121,8 +179,8 @@ function navigate(target, { focusMain = false } = {}) {
     history.replaceState(null, "", `#${target}`);
   }
 
-  const feature = features[section];
-  feature.onActivate?.(ctx);
+  animateNext = true;
+  features[section].onActivate?.(ctx); // loads data if needed
   render();
   updateSyncStatus();
 
@@ -203,6 +261,18 @@ function updateSyncStatus() {
     const label = qs(".sync__text", el);
     if (label && label.textContent !== text) label.textContent = text;
   }
+
+  // Keep "#section-meta" fresh without a full repaint (renderKey omits syncedAt).
+  if (section === "upcoming" || section === "recent") {
+    const meta = qs("#section-meta");
+    const schedule = schedules[section === "recent" ? "recent" : "upcoming"];
+    if (meta && schedule) {
+      const value = schedule.syncedAt
+        ? `Synced ${timeAgo(schedule.syncedAt / 1000)}${schedule.source === "cache" ? " · from cache" : ""}`
+        : "";
+      if (meta.textContent !== value) meta.textContent = value;
+    }
+  }
 }
 
 /* ------------------------------------------------------------
@@ -233,27 +303,42 @@ function toggleSave(id, button) {
     showToast(result.removed ? "Removed from watchlist" : "Saved to watchlist");
   }
 
-  // Optimistic UI on the button that was pressed.
-  if (button) {
-    const nowSaved = !result.removed;
-    button.classList.toggle("is-saved", nowSaved);
-    if (!prefersReducedMotion()) {
-      button.classList.remove("is-pop");
-      void button.offsetWidth;
-      button.classList.add("is-pop");
-    }
-    if (button.hasAttribute("aria-label")) {
-      const title = titleOf(media);
-      button.setAttribute(
-        "aria-label",
-        nowSaved ? `Remove ${title} from watchlist` : `Save ${title} to watchlist`
-      );
-    }
+  // Sync every save control for this title without repainting the view.
+  syncSaveButtons();
+  if (button && !prefersReducedMotion()) {
+    button.classList.remove("is-pop");
+    void button.offsetWidth;
+    button.classList.add("is-pop");
   }
 
   updateCounts(true);
-  // Re-render the view shortly after so cards reflect the new state.
-  setTimeout(render, 180);
+  if (section === "watchlist") render(); // progress/stats live here
+}
+
+/** Bring every [data-action="save"] control in line with storage. */
+function syncSaveButtons() {
+  for (const button of qsa('[data-action="save"]')) {
+    const id = Number(button.dataset.id);
+    if (!Number.isInteger(id)) continue;
+    const isSaved = watchlist.has(id);
+    if (button.classList.contains("btn")) {
+      // Text button (spotlight): swap label + variant.
+      button.classList.toggle("btn--secondary", isSaved);
+      button.classList.toggle("btn--ghost", !isSaved);
+      const label = isSaved ? "In watchlist" : "Add to watchlist";
+      if (button.textContent.trim() !== label) button.textContent = label;
+    } else {
+      button.classList.toggle("is-saved", isSaved);
+      const media = pool.findById(id) || watchlist.find(id);
+      const title = media ? titleOf(media) : "";
+      if (title && button.hasAttribute("aria-label")) {
+        button.setAttribute(
+          "aria-label",
+          isSaved ? `Remove ${title} from watchlist` : `Save ${title} to watchlist`
+        );
+      }
+    }
+  }
 }
 
 function bumpProgress(id, delta, button) {
@@ -274,7 +359,7 @@ function bumpProgress(id, delta, button) {
   }
 
   updateCounts(true);
-  setTimeout(render, 220);
+  if (section === "watchlist") render();
 }
 
 /* ------------------------------------------------------------
@@ -302,6 +387,7 @@ async function refreshCurrent() {
    ------------------------------------------------------------ */
 
 function setQuery(value, { silent = false } = {}) {
+  const hadQuery = Boolean(query.trim());
   query = value ?? "";
   const input = qs("#search");
   if (input && input.value !== query) input.value = query;
@@ -309,7 +395,9 @@ function setQuery(value, { silent = false } = {}) {
   if (clear) clear.hidden = !query;
 
   if (!silent) {
-    if (query.trim()) runSearch(query);
+    const hasQuery = Boolean(query.trim());
+    if (hadQuery !== hasQuery) animateNext = true; // entering/leaving search
+    if (hasQuery) runSearch(query);
     else {
       cancelSearch();
       searchFeature.setResults({ results: [] });
@@ -491,6 +579,7 @@ function bindStorage() {
     ) {
       watchlist.read(true);
       updateCounts();
+      syncSaveButtons();
       render();
     }
     if (event.key === prefsStore.key || event.key === prefsStore.legacyKey) {
@@ -573,11 +662,14 @@ async function init() {
     pool.addAll(schedules[kind].events);
     updateSyncStatus();
     if (query.trim()) return;
-    if ((kind === "recent" && section === "recent") || (kind === "upcoming" && section !== "recent")) {
-      render();
-    } else {
-      updateSyncStatus();
-    }
+    const visible =
+      (kind === "recent" && section === "recent") || (kind === "upcoming" && section !== "recent");
+    if (!visible) return;
+    // A "fetch started" flip with content already on screen changes nothing
+    // visible — repainting here is what caused load-time flashing.
+    const state = schedules[kind];
+    if (state.loading && state.events.length) return;
+    render();
   });
 
   busOn("prefs:changed", () => {
