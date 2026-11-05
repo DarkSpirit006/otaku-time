@@ -58,14 +58,14 @@ npm run screenshots    # refresh docs/screenshots from the live app
 
 The e2e suite intercepts `graphql.anilist.co` with synthetic and captured fixtures, so it is deterministic and works offline. Unit tests cover formatting, time zones and countdowns, search ranking, response normalization, the API client (caching, dedupe, retries, rate limits, cancellation) and the storage layer (migrations, corruption, quota failures, import/export validation).
 
-Continuous integration runs both suites on every push and pull request (`.github/workflows/validate.yml`). Pushes to `main` deploy to GitHub Pages via the official Pages actions (`.github/workflows/pages.yml`).
+Continuous integration runs both suites on every push and pull request (`.github/workflows/validate.yml`). Pushes to `main` deploy to GitHub Pages via the official Pages actions (`.github/workflows/pages.yml`), with the artifact upload and the deployment in separate jobs so the Pages artifact lookup is not racing its own finalize step.
 
 ## Project structure
 
 ```
 index.html            # semantic shell: topbar, sidebar, tabbar, dialogs
 favicon.svg           # OT monogram
-assets/fonts/         # self-hosted Inter + Space Grotesk (woff2)
+assets/fonts/         # self-hosted Syne, Inter + IBM Plex Mono (woff2)
 css/
   variables.css       # design tokens, both themes, motion + focus rings
   base.css            # reset, typography, ambient background, reduced motion
