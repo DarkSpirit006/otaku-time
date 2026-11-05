@@ -1,28 +1,39 @@
 /* ============================================================
-   Otaku Time — buttons, icon buttons, chips, badges, actions
+   Otaku Time — buttons, icon controls, badges
+   Printed-matter shapes: sharp corners, mono micro-labels
    ============================================================ */
 
-/* ---------- Icon button ---------- */
-.icon-btn {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  flex: none;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface-2);
-  color: var(--text-dim);
+.btn {
+  --btn-bg: transparent;
+  --btn-fg: var(--text);
+  --btn-border: var(--border-strong);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  min-height: 42px;
+  padding: 0 var(--sp-5);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  border: var(--hair) solid var(--btn-border);
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
   transition:
-    background var(--dur-fast) var(--ease-out),
-    color var(--dur-fast) var(--ease-out),
-    border-color var(--dur-fast) var(--ease-out),
-    transform var(--dur-fast) var(--ease-spring);
+    background-color var(--dur-fast) linear,
+    border-color var(--dur-fast) linear,
+    color var(--dur-fast) linear,
+    transform var(--dur-fast) var(--ease-out);
 }
 
-.icon-btn svg {
-  width: 19px;
-  height: 19px;
+.btn svg {
+  width: 14px;
+  height: 14px;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.7;
@@ -30,22 +41,106 @@
   stroke-linejoin: round;
 }
 
-.icon-btn:hover:not(:disabled) {
-  background: var(--accent-soft);
-  border-color: var(--border-accent);
-  color: var(--accent-bright);
+.btn:active {
+  transform: translateY(1px);
 }
 
-.icon-btn:active:not(:disabled) {
-  transform: scale(0.92);
+.btn--primary {
+  --btn-bg: var(--accent);
+  --btn-fg: var(--accent-ink);
+  --btn-border: var(--accent);
+  font-weight: 500;
+}
+
+.btn--primary:hover {
+  --btn-bg: var(--accent-hover);
+  --btn-border: var(--accent-hover);
+}
+
+.btn--secondary {
+  --btn-bg: transparent;
+  --btn-fg: var(--text);
+  --btn-border: var(--border-strong);
+}
+
+.btn--secondary:hover {
+  --btn-border: var(--text);
+}
+
+.btn--ghost {
+  --btn-bg: transparent;
+  --btn-fg: var(--text-dim);
+  --btn-border: var(--border);
+}
+
+.btn--ghost:hover {
+  --btn-fg: var(--text);
+  --btn-border: var(--border-strong);
+}
+
+.btn--danger {
+  --btn-bg: transparent;
+  --btn-fg: var(--accent);
+  --btn-border: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.btn--danger:hover {
+  --btn-bg: var(--accent);
+  --btn-fg: var(--accent-ink);
+  --btn-border: var(--accent);
+}
+
+.btn--sm {
+  min-height: 32px;
+  padding: 0 var(--sp-3);
+  font-size: var(--text-2xs);
+}
+
+.btn:disabled,
+.btn[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ---------- Square icon controls ---------- */
+
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: var(--hair) solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-dim);
+  background: transparent;
+  transition:
+    color var(--dur-fast) linear,
+    border-color var(--dur-fast) linear,
+    background-color var(--dur-fast) linear;
+}
+
+.icon-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.icon-btn:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
 }
 
 .icon-btn:disabled {
   opacity: 0.5;
+  cursor: progress;
 }
 
 .icon-btn.is-spinning svg {
-  animation: spin 0.9s linear infinite;
+  animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin {
@@ -54,268 +149,173 @@
   }
 }
 
-/* Theme toggle icon swap */
-.js-theme-toggle .icon-moon {
+.icon-sun,
+.icon-moon {
   display: none;
 }
 
-:root[data-theme="light"] .js-theme-toggle .icon-sun {
-  display: none;
-}
-
-:root[data-theme="light"] .js-theme-toggle .icon-moon {
+[data-theme="dark"] .icon-sun,
+[data-theme="light"] .icon-moon {
   display: block;
 }
 
-.js-theme-toggle svg {
-  transition: transform var(--dur-slow) var(--ease-spring);
-}
+/* ---------- Save control (poster corner) ---------- */
 
-.js-theme-toggle:hover svg {
-  transform: rotate(28deg);
-}
-
-/* ---------- Primary / secondary buttons ---------- */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-2);
-  min-height: 40px;
-  padding: 0 var(--sp-5);
-  border-radius: var(--radius-md);
-  border: 1px solid transparent;
-  font-size: var(--text-sm);
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-  text-decoration: none;
+.save-btn {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: var(--hair) solid rgba(255, 255, 255, 0.45);
+  border-radius: 0;
+  background: rgba(8, 8, 10, 0.55);
+  color: #fdfcf8;
+  backdrop-filter: blur(4px);
   transition:
-    background var(--dur-fast) var(--ease-out),
-    border-color var(--dur-fast) var(--ease-out),
-    color var(--dur-fast) var(--ease-out),
-    transform var(--dur-fast) var(--ease-spring),
-    box-shadow var(--dur-fast) var(--ease-out);
+    background-color var(--dur-fast) linear,
+    color var(--dur-fast) linear,
+    border-color var(--dur-fast) linear;
 }
 
-.btn:hover {
-  text-decoration: none;
-}
-
-.btn:active {
-  transform: scale(0.97);
-}
-
-.btn:disabled {
-  opacity: 0.5;
-}
-
-.btn svg {
-  width: 16px;
-  height: 16px;
+.save-btn svg {
+  width: 14px;
+  height: 14px;
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.9;
+  stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.btn--primary {
-  background: var(--brand-gradient);
-  color: #fff;
-  box-shadow: 0 4px 18px -6px rgba(109, 94, 252, 0.55);
-}
-
-.btn--primary:hover:not(:disabled) {
-  box-shadow: 0 8px 26px -6px rgba(109, 94, 252, 0.7);
-  transform: translateY(-1px);
-}
-
-.btn--primary:active {
-  transform: scale(0.97);
-}
-
-.btn--secondary {
-  background: var(--surface-2);
-  border-color: var(--border);
-  color: var(--text);
-}
-
-.btn--secondary:hover:not(:disabled) {
-  background: var(--accent-soft);
-  border-color: var(--border-accent);
-}
-
-.btn--ghost {
-  background: transparent;
-  color: var(--text-dim);
-}
-
-.btn--ghost:hover:not(:disabled) {
-  background: var(--surface-2);
-  color: var(--text);
-}
-
-.btn--danger {
-  background: var(--danger-soft);
-  border-color: color-mix(in srgb, var(--danger) 35%, transparent);
-  color: var(--danger);
-}
-
-.btn--danger:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--danger) 18%, transparent);
-}
-
-.btn--sm {
-  min-height: 32px;
-  padding: 0 var(--sp-3);
-  font-size: var(--text-xs);
-  border-radius: var(--radius-sm);
-}
-
-/* ---------- Text action ---------- */
-.text-action {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--accent-ink);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  background: none;
-  border: none;
-  padding: 0;
-}
-
-.text-action:hover {
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-/* ---------- Inline action (inside notices) ---------- */
-.inline-action {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 10px;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-full);
-  background: var(--surface-2);
-  color: var(--text);
-  font-size: var(--text-xs);
-  font-weight: 600;
-  transition: background var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-spring);
-}
-
-.inline-action:hover {
-  background: var(--accent-soft);
-  border-color: var(--border-accent);
-}
-
-.inline-action:active {
-  transform: scale(0.95);
-}
-
-/* ---------- Badges / chips ---------- */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 9px;
-  border-radius: var(--radius-full);
-  font-size: var(--text-xs);
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  line-height: 1.45;
-  background: var(--surface-3);
-  border: 1px solid var(--border);
-  color: var(--text-dim);
-}
-
-.badge--accent {
-  background: var(--accent-soft);
-  border-color: var(--border-accent);
-  color: var(--accent-ink);
-}
-
-.badge--pink {
-  background: var(--pink-soft);
-  border-color: color-mix(in srgb, var(--pink) 35%, transparent);
-  color: var(--pink);
-}
-
-.badge--live {
-  background: var(--success-soft);
-  border-color: color-mix(in srgb, var(--success) 35%, transparent);
-  color: var(--success);
-}
-
-.badge--score {
-  background: var(--warning-soft);
-  border-color: color-mix(in srgb, var(--warning) 35%, transparent);
-  color: var(--warning);
-}
-
-/* ---------- Save (bookmark) button on cards ---------- */
-.save-btn {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: rgba(10, 11, 16, 0.62);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  color: #e9ebf4;
-  transition:
-    background var(--dur-fast) var(--ease-out),
-    color var(--dur-fast) var(--ease-out),
-    transform var(--dur-base) var(--ease-spring),
-    border-color var(--dur-fast) var(--ease-out);
-}
-
-.save-btn svg {
-  width: 16px;
-  height: 16px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linejoin: round;
-  transition: fill var(--dur-base) var(--ease-out);
-}
-
 .save-btn:hover {
-  transform: scale(1.1);
-  border-color: rgba(255, 255, 255, 0.4);
-  background: rgba(10, 11, 16, 0.82);
-}
-
-.save-btn:active {
-  transform: scale(0.94);
+  border-color: #fff;
+  background: rgba(8, 8, 10, 0.8);
 }
 
 .save-btn.is-saved {
-  color: var(--pink);
-  border-color: color-mix(in srgb, var(--pink) 55%, transparent);
-  background: rgba(20, 10, 16, 0.78);
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
 }
 
-.save-btn.is-saved svg {
-  fill: currentColor;
-}
-
-.save-btn.is-pop {
-  animation: save-pop var(--dur-slow) var(--ease-spring);
+.save-btn.is-pop svg {
+  animation: save-pop 340ms var(--ease-out);
 }
 
 @keyframes save-pop {
   0% {
-    transform: scale(1);
+    transform: scale(0.5);
   }
-  40% {
-    transform: scale(1.28) rotate(-8deg);
+  55% {
+    transform: scale(1.22);
   }
   100% {
     transform: scale(1);
   }
+}
+
+/* ---------- Episode bump ---------- */
+
+.bump-btn {
+  position: relative;
+  z-index: 2;
+  display: inline-grid;
+  place-items: center;
+  min-width: 30px;
+  height: 26px;
+  padding: 0 var(--sp-2);
+  border: var(--hair) solid var(--border-strong);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.04em;
+  transition:
+    background-color var(--dur-fast) linear,
+    color var(--dur-fast) linear,
+    border-color var(--dur-fast) linear;
+}
+
+.bump-btn svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.bump-btn:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.bump-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.bump-btn.is-pop {
+  animation: bump-pop 300ms var(--ease-out);
+}
+
+@keyframes bump-pop {
+  40% {
+    transform: scale(1.12);
+  }
+}
+
+/* ---------- Badges — stamped labels, not pills ---------- */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 7px;
+  border: var(--hair) solid var(--border);
+  border-radius: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.badge--accent {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.badge--score {
+  border-color: color-mix(in srgb, var(--gold) 50%, transparent);
+  color: var(--gold);
+  background: var(--gold-soft);
+}
+
+.badge--live {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  color: var(--accent);
+}
+
+.badge--pink {
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  color: var(--accent);
+}
+
+/* ---------- Theme toggle icon swap ---------- */
+
+.js-theme-toggle .icon-sun,
+.js-theme-toggle .icon-moon {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }

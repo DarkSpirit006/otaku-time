@@ -7,7 +7,7 @@
 
 import { getSchedule, loadSchedule, needsLoad, attachSentinel, detachSentinel } from "../../services/schedule.js";
 import { dayKey, dayLabel, isTodayOrTomorrow, timeAgo } from "../../utils/time.js";
-import { eventCard, dayGroup, spotlight } from "../../components/card.js";
+import { eventCard, dayGroup, spotlight, leadStrip, timelineRow } from "../../components/card.js";
 import { skeletonGrid, emptyState, notice, sectionHead } from "../../components/states.js";
 import { watchlist } from "../../storage/watchlist.js";
 import { esc } from "../../utils/dom.js";
@@ -110,17 +110,34 @@ export function render(ctx) {
           })
           .join("")}</div>`;
 
+      // A day opens with an editorial lead (up to two wide panels),
+      // then continues as a dense lineup grid.
+      const leadCount = list.length >= 5 ? 2 : list.length >= 2 ? 1 : 0;
+      const lead = leadCount ? leadStrip(list.slice(0, leadCount), prefs) : "";
+      const rest = list.slice(leadCount);
+
       let content;
       if (key === todayKey) {
-        const past = list.filter((event) => event.airingAt < nowSeconds);
+        // Already aired today = a quiet log; still to come = the day's
+        // editorial lead plus the lineup. Never a sparse poster grid.
+        const past = list.filter((event) => event.airingAt < nowSeconds).reverse();
         const future = list.filter((event) => event.airingAt >= nowSeconds);
-        if (past.length && future.length) {
-          content = `${cards(past)}<div class="now-divider"><span>Now</span></div>${cards(future)}`;
-        } else {
-          content = cards(list);
-        }
+        const futureLead = future.length ? leadStrip(future.slice(0, future.length >= 5 ? 2 : 1), prefs) : "";
+        const futureRest = future.slice(future.length >= 5 ? 2 : 1);
+
+        const pastBlock = past.length
+          ? `<div class="today-past">
+               <p class="today-past__label">Aired earlier today</p>
+               <div class="timeline__list">${past
+                 .map((event) => timelineRow(event, prefs))
+                 .join("")}</div>
+             </div>
+             <div class="now-divider"><span>Now</span></div>`
+          : "";
+
+        content = `${pastBlock}${futureLead}${futureRest.length ? cards(futureRest) : ""}`;
       } else {
-        content = cards(list);
+        content = `${lead}${rest.length ? cards(rest) : ""}`;
       }
 
       return dayGroup({ key, label, relative, count: list.length, content });

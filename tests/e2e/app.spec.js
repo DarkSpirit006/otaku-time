@@ -31,9 +31,10 @@ test.describe("boot & sections", () => {
     await expect(nav.nth(1)).toHaveAttribute("href", "#watchlist");
     await expect(nav.nth(2)).toHaveAttribute("href", "#recent");
 
-    // Schedule rendered from the API
-    await expect(page.locator(".card")).toHaveCount(3);
+    // Schedule rendered from the API: the spotlight is the next episode,
+    // the day opens with editorial lead panels, the lineup continues as cards.
     await expect(page.locator(".spotlight")).toBeVisible();
+    await expect(page.locator(".card, .lead-panel")).toHaveCount(3);
     await expect(page.locator(".spotlight__title")).toContainText("Alpha Show");
     await expect(page.locator(".day-group").first()).toBeVisible();
     await expect(page.locator(".js-sync").first()).toHaveAttribute("data-state", "live");
@@ -45,7 +46,7 @@ test.describe("boot & sections", () => {
     const events = defaultEvents();
     await mockAniList(page, standardSchedules(events));
     await page.goto("/");
-    await expect(page.locator(".card")).toHaveCount(3);
+    await expect(page.locator(".card, .lead-panel")).toHaveCount(3);
 
     await page.click('.nav__link[data-nav="watchlist"]');
     await expect(page).toHaveURL(/#watchlist$/);
@@ -61,25 +62,23 @@ test.describe("boot & sections", () => {
     // Deep link on a fresh load
     await page.goto("/#upcoming");
     await expect(page.locator("#section-title")).toHaveText("Upcoming");
-    await expect(page.locator(".card")).toHaveCount(3);
+    await expect(page.locator(".card, .lead-panel")).toHaveCount(3);
   });
 
   test("schedule ships unfiltered, in chronological order", async ({ page }) => {
     const events = defaultEvents();
     await mockAniList(page, standardSchedules(events));
     await page.goto("/");
-    await expect(page.locator(".card")).toHaveCount(3);
+    await expect(page.locator(".card, .lead-panel")).toHaveCount(3);
 
     // No filter UI anywhere
     await expect(page.locator(".filter-bar")).toHaveCount(0);
     await expect(page.locator("#app .select__trigger")).toHaveCount(0);
 
-    // Air-time order: +1h, +2h, +3d
-    await expect(page.locator(".card__title")).toHaveText([
-      "Alpha Show",
-      "Beta Show",
-      "Gamma Show",
-    ]);
+    // Air-time order: +1h, +2h, +3d (lead panels lead the lineup)
+    await expect(
+      page.locator(".lead-panel__title, .card__title")
+    ).toHaveText(["Alpha Show", "Beta Show", "Gamma Show"]);
 
     // Meta carries the count instead of the old filter bar
     await expect(page.locator("#section-meta")).toContainText("3 episodes");
@@ -107,7 +106,7 @@ test.describe("search", () => {
       details: (vars) => detailsPayload(makeMedia(vars.id, "Remote Discovery")),
     });
     await page.goto("/");
-    await expect(page.locator(".card")).toHaveCount(3);
+    await expect(page.locator(".card, .lead-panel")).toHaveCount(3);
 
     // "/" focuses the search field
     await page.keyboard.press("/");
@@ -154,10 +153,10 @@ test.describe("watchlist lifecycle", () => {
         ),
     });
     await page.goto("/");
-    await expect(page.locator(".card")).toHaveCount(3);
+    await expect(page.locator(".card, .lead-panel")).toHaveCount(3);
 
-    // Save the first card
-    await page.locator(".card__save").first().click();
+    // Save the first entry (a lead panel carries the save control too)
+    await page.locator("[data-action='save']").first().click();
     await expect(page.locator("#toast")).toHaveText(/Saved to watchlist/);
     await expect(page.locator('.nav__count[data-nav-count]')).toHaveText("1");
     await expect(page.locator('.nav__count[data-nav-count]')).toBeVisible();
@@ -253,9 +252,9 @@ test.describe("dialogs", () => {
       },
     });
     await page.goto("/");
-    await expect(page.locator(".card")).toHaveCount(3);
+    await expect(page.locator(".card, .lead-panel")).toHaveCount(3);
 
-    const opener = page.locator(".card__open").first();
+    const opener = page.locator(".card__open, .lead-panel__open").first();
     await opener.click();
     const dialog = page.locator("#detail-dialog");
     await expect(dialog).toBeVisible();
@@ -291,12 +290,12 @@ test.describe("dialogs", () => {
   test("settings change theme, clock format and timezone", async ({ page }) => {
     await mockAniList(page, standardSchedules(defaultEvents()));
     await page.goto("/");
-    await expect(page.locator(".card")).toHaveCount(3);
+    await expect(page.locator(".card, .lead-panel")).toHaveCount(3);
 
     await page.locator(".js-settings-open").first().click();
     const dialog = page.locator("#settings-dialog");
 
-    // Timezone → card airing times re-render in the new zone
+    // Timezone → airing times re-render in the new zone
     const timeBefore = await page.locator(".card__time").first().textContent();
     await page.selectOption("#setting-timezone", "America/New_York");
     await expect(page.locator(".card__time").first()).not.toHaveText(timeBefore);
@@ -446,11 +445,11 @@ test.describe("performance basics", () => {
     const events = defaultEvents();
     await mockAniList(page, standardSchedules(events));
     await page.goto("/");
-    await expect(page.locator(".card")).toHaveCount(3);
+    await expect(page.locator(".card, .lead-panel")).toHaveCount(3);
 
     // Second visit: snapshot restores instantly (source: cache until network settles)
     await page.goto("/");
-    await expect(page.locator(".card")).toHaveCount(3);
+    await expect(page.locator(".card, .lead-panel")).toHaveCount(3);
     // The IndexedDB cache now holds the snapshot
     const cached = await page.evaluate(async () => {
       const db = await new Promise((resolve, reject) => {
@@ -548,7 +547,7 @@ test.describe("render discipline (no flashing)", () => {
     const events = defaultEvents();
     await mockAniList(page, standardSchedules(events));
     await page.goto("/");
-    await expect(page.locator(".card")).toHaveCount(3);
+    await expect(page.locator(".card, .lead-panel")).toHaveCount(3);
     await expect(page.locator("#app .view-enter")).toBeVisible(); // entrance played
 
     // Remember the exact entrance node so we can prove it is never recreated.
@@ -556,15 +555,16 @@ test.describe("render discipline (no flashing)", () => {
       window.__entrance = document.querySelector("#app .view-enter");
       window.__paints = 0;
     });
-    await page.locator(".card__save").first().click();
+    const firstSave = page.locator(".card__save, .lead-panel__save").first();
+    await firstSave.click();
     await expect(page.locator("#toast")).toHaveText(/Saved to watchlist/);
     await page.waitForTimeout(600);
     expect(await page.evaluate(() => window.__paints)).toBe(0);
     expect(
       await page.evaluate(() => document.querySelector("#app .view-enter") === window.__entrance)
     ).toBe(true);
-    // Both the clicked card and the nav count reflect the save
-    await expect(page.locator(".card__save").first()).toHaveClass(/is-saved/);
+    // Both the clicked entry and the nav count reflect the save
+    await expect(firstSave).toHaveClass(/is-saved/);
     await expect(page.locator('.nav__count[data-nav-count]')).toHaveText("1");
 
     // Section switch → repaint happens exactly once and animates in
@@ -588,7 +588,7 @@ test.describe("render discipline (no flashing)", () => {
   test("schedule sync after load does not replay entrance animations", async ({ page }) => {
     await mockAniList(page, standardSchedules(defaultEvents()));
     await page.goto("/");
-    await expect(page.locator(".card")).toHaveCount(3);
+    await expect(page.locator(".card, .lead-panel")).toHaveCount(3);
     await expect(page.locator("#app .view-enter")).toBeVisible();
 
     // A manual refresh brings identical schedule data: nothing should be
@@ -606,6 +606,6 @@ test.describe("render discipline (no flashing)", () => {
     expect(
       await page.evaluate(() => document.querySelector("#app .view-enter") === window.__entrance)
     ).toBe(true);
-    await expect(page.locator(".card")).toHaveCount(3);
+    await expect(page.locator(".card, .lead-panel")).toHaveCount(3);
   });
 });

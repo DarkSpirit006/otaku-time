@@ -176,10 +176,14 @@ function renderDetail(media, { loaded, fetchError = "" }) {
   const watched = savedItem?.watched ?? 0;
   const nextAt = media.nextAiringEpisode?.airingAt ?? null;
 
+  const posterUrl = media.coverImage?.extraLarge || media.coverImage?.large || media.coverImage?.medium;
+  // No banner on many obscure titles — use a blurred poster wash so the
+  // header never collapses into an empty strip.
   const banner = media.bannerImage
     ? `<img src="${esc(media.bannerImage)}" alt="" width="940" height="300" decoding="async" />`
-    : "";
-  const posterUrl = media.coverImage?.extraLarge || media.coverImage?.large || media.coverImage?.medium;
+    : posterUrl
+      ? `<img class="detail-banner__fallback" src="${esc(posterUrl)}" alt="" aria-hidden="true" width="940" height="300" decoding="async" />`
+      : "";
   const poster = posterUrl
     ? `<img src="${esc(posterUrl)}" alt="${esc(title)}" width="320" height="457" decoding="async" />`
     : "";

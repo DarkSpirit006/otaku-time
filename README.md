@@ -4,9 +4,13 @@ A local-first anime schedule and watchlist tracker. Three sections — **Upcomin
 
 ![Otaku Time — Upcoming (dark)](docs/screenshots/upcoming-dark.png)
 
+## Art direction — “Broadcast Almanac”
+
+Otaku Time is designed like a printed broadcast almanac rather than a dashboard: ink-on-paper surfaces, hairline rules, a single signal-red accent, and oversized display typography (**Syne**) set against **IBM Plex Mono** micro-labels. Anime artwork is the page structure — a cinematic “next episode” feature, editorial lead panels that open each day, and dense lineups beneath — so no two sections read like the same grid. Both themes are first-class: ink (default) and paper. Every motion is purposeful and fully disabled under `prefers-reduced-motion`.
+
 ## Features
 
-- **Upcoming** — a “next episode” spotlight plus a date-grouped poster grid of the whole schedule window, in air-time order, with live countdowns and a *Now* divider for today.
+- **Upcoming** — a cinematic “next episode” feature, a compact log of what already aired today, and each day opening with editorial lead panels before the lineup grid — all in air-time order with live countdowns.
 - **Watchlist** — everything you track, newest additions first, with stats, per-title episode progress (`+1` / direct input) and completion states. Stored in `localStorage` and preserved across visits.
 - **Recently aired** — the full loaded history, newest first, grouped by day.
 
@@ -67,7 +71,7 @@ css/
   base.css            # reset, typography, ambient background, reduced motion
   layout.css          # app grid, sidebar, topbar, clock, tabbar, toast
   responsive.css      # ≤960px tab-bar layout, mobile dialogs, compact grids
-  components/         # buttons, cards, forms, dialogs
+  components/         # buttons, cards + lead panels, forms, dialogs
   features/           # upcoming, watchlist, recently-aired, search
 js/
   api/                # GraphQL queries, normalization, cached client

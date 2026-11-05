@@ -34,7 +34,7 @@ test.describe("AniList API failures", () => {
 
     // Recovery: the failure queue is drained, so retry succeeds
     await page.locator('[data-action="retry"]').click();
-    await expect(page.locator(".card")).toHaveCount(3, { timeout: 15_000 });
+    await expect(page.locator(".card, .lead-panel")).toHaveCount(3, { timeout: 15_000 });
     await expect(page.locator(".js-sync").first()).toHaveAttribute("data-state", "live");
   });
 
@@ -119,7 +119,7 @@ test.describe("AniList API failures", () => {
     await page.goto("/");
     await expect(page.locator(".skeleton-card").first()).toBeVisible();
     await expect(page.locator(".skeleton-shimmer").first()).toBeVisible();
-    await expect(page.locator(".card")).toHaveCount(3, { timeout: 20_000 });
+    await expect(page.locator(".card, .lead-panel")).toHaveCount(3, { timeout: 20_000 });
     await expect(page.locator(".skeleton-card")).toHaveCount(0);
   });
 });
@@ -141,8 +141,8 @@ test.describe("storage hazards", () => {
 
     // Saving from Upcoming repairs storage with valid data
     await page.click('.nav__link[data-nav="upcoming"]');
-    await expect(page.locator(".card")).toHaveCount(3);
-    await page.locator(".card__save").first().click();
+    await expect(page.locator(".card, .lead-panel")).toHaveCount(3);
+    await page.locator("[data-action='save']").first().click();
     await expect(page.locator('.nav__count[data-nav-count]')).toHaveText("1");
     const repaired = await page.evaluate(
       (key) => JSON.parse(localStorage.getItem(key)).version === 2,
@@ -166,8 +166,8 @@ test.describe("storage hazards", () => {
     await mockAniList(page, standardSchedules(defaultEvents()));
 
     await page.goto("/");
-    await expect(page.locator(".card")).toHaveCount(3);
-    await page.locator(".card__save").first().click();
+    await expect(page.locator(".card, .lead-panel")).toHaveCount(3);
+    await page.locator("[data-action='save']").first().click();
 
     // In-memory save still works and the user is told it's session-only
     await expect(page.locator("#toast")).toHaveText(/storage is full|session only/i);
@@ -231,7 +231,7 @@ test.describe("storage hazards", () => {
     await mockAniList(page, standardSchedules(defaultEvents()));
 
     await page.goto("/");
-    await expect(page.locator(".card")).toHaveCount(3);
+    await expect(page.locator(".card, .lead-panel")).toHaveCount(3);
     await expect(page.locator("#toast")).toContainText("settings could not be read", { timeout: 10_000 });
 
     // Original untouched
@@ -244,7 +244,7 @@ test.describe("multi-tab & environment", () => {
   test("11. cross-tab: saving in one tab updates the other", async ({ context, page }) => {
     await mockAniList(page, standardSchedules(defaultEvents()));
     await page.goto("/");
-    await expect(page.locator(".card")).toHaveCount(3);
+    await expect(page.locator(".card, .lead-panel")).toHaveCount(3);
 
     const second = await context.newPage();
     await mockAniList(second, standardSchedules(defaultEvents()));
@@ -252,7 +252,7 @@ test.describe("multi-tab & environment", () => {
     await expect(second.locator(".empty h2")).toHaveText("Your watchlist is empty");
 
     // Save in tab A → tab B's storage event updates counts and view
-    await page.locator(".card__save").first().click();
+    await page.locator("[data-action='save']").first().click();
     await expect(page.locator('.nav__count[data-nav-count]')).toHaveText("1");
     await expect(second.locator('.nav__count[data-nav-count]')).toHaveText("1");
     await expect(second.locator(".card")).toHaveCount(1);
@@ -265,7 +265,7 @@ test.describe("multi-tab & environment", () => {
     const page = await context.newPage();
     await mockAniList(page, standardSchedules(defaultEvents()));
     await page.goto("/");
-    await expect(page.locator(".card")).toHaveCount(3);
+    await expect(page.locator(".card, .lead-panel")).toHaveCount(3);
 
     const durations = await page.evaluate(() => {
       const card = document.querySelector(".card");
@@ -293,19 +293,19 @@ test.describe("multi-tab & environment", () => {
   test("13. going offline surfaces a notice and keeps saved data usable", async ({ page, context }) => {
     await mockAniList(page, standardSchedules(defaultEvents()));
     await page.goto("/");
-    await expect(page.locator(".card")).toHaveCount(3);
+    await expect(page.locator(".card, .lead-panel")).toHaveCount(3);
 
     await context.setOffline(true);
     await expect(page.locator("#toast")).toHaveText(/offline/i, { timeout: 10_000 });
 
     // Existing content remains on screen
-    await expect(page.locator(".card")).toHaveCount(3);
+    await expect(page.locator(".card, .lead-panel")).toHaveCount(3);
 
     // Refresh while offline → error state, data preserved
     await page.unroute("https://graphql.anilist.co/**");
     await page.locator(".js-refresh").first().click();
     await expect(page.locator(".notice")).toContainText("Can't reach AniList", { timeout: 25_000 });
-    await expect(page.locator(".card")).toHaveCount(3, "stale data stays visible");
+    await expect(page.locator(".card, .lead-panel")).toHaveCount(3, "stale data stays visible");
 
     await context.setOffline(false);
   });
@@ -321,11 +321,12 @@ test.describe("multi-tab & environment", () => {
       recent: [],
     }));
     await page.goto("/");
-    await expect(page.locator(".card")).toHaveCount(1);
+    await expect(page.locator(".card, .lead-panel")).toHaveCount(1);
+    // No art anywhere → titled placeholder instead of a broken image
     await expect(page.locator(".card__poster-fallback")).toBeVisible();
     await expect(page.locator(".card__poster-fallback span")).toContainText("No Art Show");
     // No broken <img>
-    expect(await page.locator(".card img").count()).toBe(0);
+    expect(await page.locator(".card img, .lead-panel img").count()).toBe(0);
   });
 
   test("15. sentinel auto-loads the next schedule page", async ({ page }) => {
@@ -357,11 +358,11 @@ test.describe("multi-tab & environment", () => {
       },
     });
     await page.goto("/");
-    await expect(page.locator(".card")).toHaveCount(6);
+    await expect(page.locator(".card, .lead-panel")).toHaveCount(6);
 
     // Scroll the sentinel into range → IntersectionObserver auto-loads page 2
     await page.locator(".load-sentinel").scrollIntoViewIfNeeded();
-    await expect(page.locator(".card")).toHaveCount(10, { timeout: 20_000 });
+    await expect(page.locator(".card, .lead-panel")).toHaveCount(10, { timeout: 20_000 });
     await expect(page.locator(".card").last()).toContainText("Page Two Show 4");
   });
 });

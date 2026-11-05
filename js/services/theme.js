@@ -13,8 +13,8 @@ import { emit } from "./bus.js";
 export const THEME_KEY = "otaku-time.theme.v1";
 export const LEGACY_THEME_KEY = "okaeri.theme.v1";
 
-const DARK_META = "#0b0d12";
-const LIGHT_META = "#f6f6fa";
+const DARK_META = "#08080a";
+const LIGHT_META = "#f1ede4";
 
 let initialized = false;
 let preference = "auto"; // "auto" | "dark" | "light"

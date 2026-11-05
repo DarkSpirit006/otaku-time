@@ -212,6 +212,56 @@ export function timelineRow(entry, prefs) {
   </article>`;
 }
 
+/**
+ * Editorial lead strip: the day's first entries as wide, cinematic
+ * panels with the poster beside a typographic block. Used above the
+ * dense lineup so a day opens with rhythm instead of a flat grid.
+ */
+export function leadStrip(entries, prefs) {
+  const items = entries
+    .map((entry, i) => {
+      const media = entry.media;
+      const title = titleOf(media);
+      const saved = watchlist.has(media.id);
+      const nowSeconds = Date.now() / 1000;
+      const timeText = countdown(entry.airingAt, media.duration, nowSeconds);
+      const fullTime = airingTime(entry.airingAt, prefs.timezone, prefs.hour12);
+      const url = media.coverImage?.extraLarge || media.coverImage?.large || media.coverImage?.medium;
+      const poster = url
+        ? `<img src="${esc(url)}" alt="${esc(title)}" width="320" height="457" loading="lazy" decoding="async" />`
+        : `<div class="card__poster-fallback">
+             ${icon("film")}
+             <span>${esc(title)}</span>
+           </div>`;
+      const index = String(i + 1).padStart(2, "0");
+
+      return `<article class="lead-panel" data-eid="e${entry.eventId ?? entry.id ?? `x${media.id}`}">
+        <button class="lead-panel__open" data-action="detail" data-id="${media.id}" aria-label="Details for ${esc(title)}"></button>
+        <div class="lead-panel__media">
+          ${poster}
+          <span class="lead-panel__index">${index}</span>
+          <button class="save-btn lead-panel__save ${saved ? "is-saved" : ""}" data-action="save" data-id="${media.id}"
+            aria-label="${saved ? `Remove ${esc(title)} from watchlist` : `Save ${esc(title)} to watchlist`}">${icon("check")}</button>
+        </div>
+        <div class="lead-panel__body">
+          <p class="lead-panel__meta">
+            <span class="lead-panel__ep">Ep ${entry.episode}</span>
+            <span>${esc(formatLabel(media.format))}</span>
+            ${Number.isInteger(media.averageScore) && media.averageScore > 0 ? `<span>${media.averageScore}%</span>` : ""}
+          </p>
+          <h3 class="lead-panel__title">${esc(title)}</h3>
+          <p class="lead-panel__time">
+            <span data-countdown data-epoch="${entry.airingAt}" data-duration="${media.duration ?? 0}">${esc(timeText)}</span>
+            <span class="lead-panel__clock">${esc(fullTime)}</span>
+          </p>
+        </div>
+      </article>`;
+    })
+    .join("");
+
+  return `<div class="lead-strip${entries.length > 1 ? " lead-strip--multi" : ""}">${items}</div>`;
+}
+
 /** Day-group section (Upcoming + Recently aired share the head styles). */
 export function dayGroup({ key, label, relative = "", count = 0, content, now = false }) {
   return `<section class="day-group" data-day="${esc(key)}">
