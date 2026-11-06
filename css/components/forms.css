@@ -21,7 +21,7 @@ textarea {
 input:focus,
 textarea:focus {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--accent-text);
 }
 
 input::placeholder {
@@ -57,7 +57,7 @@ input::placeholder {
 .check-row input[type="checkbox"] {
   width: 16px;
   height: 16px;
-  accent-color: var(--accent);
+  accent-color: var(--accent-text);
   cursor: pointer;
 }
 
@@ -108,7 +108,7 @@ input::placeholder {
 }
 
 .select__trigger[aria-expanded="true"] {
-  border-color: var(--accent);
+  border-color: var(--accent-text);
 }
 
 .select__value {
@@ -131,7 +131,7 @@ input::placeholder {
 
 .select__trigger[aria-expanded="true"] .select__chevron {
   transform: translateY(1px) rotate(225deg);
-  border-color: var(--accent);
+  border-color: var(--accent-text);
 }
 
 .select__menu {
@@ -181,7 +181,7 @@ input::placeholder {
 }
 
 .select__option[aria-selected="true"] {
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 600;
 }
 
@@ -210,4 +210,131 @@ input::placeholder {
   border-radius: var(--radius);
   font-size: var(--text-md);
   appearance: none;
+}
+
+/* ============================================================
+   Fields, toggles, inline controls (v3)
+   ============================================================ */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  min-width: 0;
+}
+
+.field--inline {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.field__label {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.field__hint {
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-faint);
+}
+
+.field--wide { width: 100%; }
+
+/* The app's enhanced combobox is sized by the field it sits in */
+.field .select,
+.field .native-select,
+.field .select__trigger {
+  min-width: 132px;
+}
+
+.notes-input {
+  width: 100%;
+  background: var(--surface-2);
+  border: var(--hair) solid var(--border);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  padding: var(--sp-2) var(--sp-3);
+  resize: vertical;
+}
+
+.notes-input:focus-visible {
+  border-color: var(--text);
+}
+
+.time-input {
+  background: var(--surface-2);
+  border: var(--hair) solid var(--border);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  padding: var(--sp-1-5) var(--sp-2);
+  min-height: 34px;
+}
+
+.input-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+  color: var(--text-faint);
+}
+
+/* Switch */
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  cursor: pointer;
+  font-size: var(--text-sm);
+}
+
+.switch input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.switch__track {
+  position: relative;
+  width: 34px;
+  height: 18px;
+  border: var(--hair) solid var(--border-strong);
+  background: var(--surface-3);
+  transition: background var(--dur-fast) linear, border-color var(--dur-fast) linear;
+  flex: none;
+}
+
+.switch__track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  background: var(--text-faint);
+  transition: transform var(--dur-base) var(--ease-out), background var(--dur-fast) linear;
+}
+
+.switch input:checked + .switch__track {
+  border-color: var(--accent-text);
+  background: var(--accent-soft);
+}
+
+.switch input:checked + .switch__track::after {
+  transform: translateX(16px);
+  background: var(--accent);
+}
+
+.switch input:focus-visible + .switch__track {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }

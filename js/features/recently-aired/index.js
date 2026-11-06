@@ -71,9 +71,8 @@ export function render(ctx) {
   }
   const ordered = Array.from(groups.entries()).sort(([a], [b]) => b.localeCompare(a));
 
-  let staggerIndex = 0;
   const html = ordered
-    .map(([key, list]) => {
+    .map(([key, list], groupIndex) => {
       const label = dayLabel(list[0].airingAt * 1000, prefs.timezone);
       const relative = isTodayOrTomorrow(key, prefs.timezone)
         ? new Intl.DateTimeFormat(undefined, {
@@ -83,12 +82,11 @@ export function render(ctx) {
             timeZone: prefs.timezone,
           }).format(new Date(list[0].airingAt * 1000))
         : "";
+      // The newest episode of the newest day leads the rundown.
+      const lede = groupIndex === 0;
       const rows = list
-        .map((event) =>
-          timelineRow(event, prefs).replace(
-            "<article class=",
-            `<article style="--stagger:${Math.min(staggerIndex++, 10)}" class=`
-          )
+        .map((event, index) =>
+          timelineRow(event, prefs, { index, lede: lede && index === 0 })
         )
         .join("");
       return dayGroup({
@@ -97,6 +95,7 @@ export function render(ctx) {
         relative,
         count: list.length,
         content: `<div class="timeline__list">${rows}</div>`,
+        partial: state.loading && state.more,
       });
     })
     .join("");

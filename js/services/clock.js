@@ -27,7 +27,11 @@ function updateCountdowns(now) {
   for (const el of qsa("[data-countdown]")) {
     const epoch = Number(el.dataset.epoch);
     const duration = el.dataset.duration ? Number(el.dataset.duration) : 0;
-    const next = countdown(epoch, duration, nowSeconds);
+    const prefix = el.dataset.prefix || "";
+    const next = `${prefix}${countdown(epoch, duration, nowSeconds)}`;
+    // Never write over an element that carries markup: textContent
+    // replacement deletes child nodes (this cost the card's air time).
+    if (el.firstElementChild) continue;
     if (el.textContent !== next) el.textContent = next;
   }
 }

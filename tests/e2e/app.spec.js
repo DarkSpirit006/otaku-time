@@ -8,11 +8,289 @@ import {
   standardSchedules,
   defaultEvents,
   makeMedia,
+  makeEvent,
   searchPayload,
   detailsPayload,
   collectPageErrors,
   seedWatchlist,
 } from "./helpers.js";
+
+/* ============================================================
+   The topbar search field is an underline, not a form input:
+   the generic input[type="search"] styling in components/forms.css
+   used to leak into it (border + surface + 40px min-height inside a
+   36px row), which pushed the field out of alignment on phones.
+   ============================================================ */
+test.describe("topbar composition", () => {
+  const geometry = () =>
+    async (page) =>
+      page.evaluate(() => {
+        const wrap = document.querySelector(".search");
+        const input = wrap.querySelector('input[type="search"]');
+        const cs = getComputedStyle(input);
+        const w = wrap.getBoundingClientRect();
+        const i = input.getBoundingClientRect();
+        return {
+          borderTop: cs.borderTopWidth,
+          borderBottom: cs.borderBottomWidth,
+          background: cs.backgroundColor,
+          radius: cs.borderTopLeftRadius,
+          bottomOverflow: Math.round(i.bottom - w.bottom),
+          topOverflow: Math.round(w.top - i.top),
+          rightOverflow: Math.round(i.right - w.right),
+        };
+      });
+
+  test("stays an underline field with no stray border, background or overflow", async ({ page }) => {
+    const events = defaultEvents();
+    await mockAniList(page, standardSchedules(events));
+    await page.goto("/");
+    await expect(page.locator(".search input[type='search']")).toBeVisible();
+
+    for (const viewport of [
+      { width: 1440, height: 900 },
+      { width: 390, height: 844 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.waitForTimeout(120);
+      const g = await geometry()(page);
+      expect(g, JSON.stringify(g)).toMatchObject({
+        borderTop: "0px",
+        borderBottom: "0px",
+        background: "rgba(0, 0, 0, 0)",
+        radius: "0px",
+      });
+      // The field must sit inside its own row, not spill over it.
+      expect(g.bottomOverflow, `bottom overflow at ${viewport.width}px`).toBeLessThanOrEqual(0);
+      expect(g.topOverflow, `top overflow at ${viewport.width}px`).toBeLessThanOrEqual(0);
+      expect(g.rightOverflow, `right overflow at ${viewport.width}px`).toBeLessThanOrEqual(1);
+    }
+  });
+});
+
+/* ============================================================
+   The feature's bottom scrim is what lets the eyebrow label sit over
+   arbitrary artwork. It has to paint ABOVE the poster image (z-index 1),
+   otherwise the fade silently does nothing and red text lands on
+   whatever colour the poster happens to be.
+   ============================================================ */
+test.describe("feature scrim", () => {
+  test("paints above the poster and fades to the page colour on phones", async ({ page }) => {
+    const events = defaultEvents();
+    await mockAniList(page, standardSchedules(events));
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+    await expect(page.locator(".spotlight__poster")).toBeVisible();
+
+    const scrim = await page.evaluate(() => {
+      const poster = document.querySelector(".spotlight__poster");
+      const img = poster.querySelector("img");
+      const after = getComputedStyle(poster, "::after");
+      return {
+        content: after.content,
+        position: after.position,
+        scrimZ: after.zIndex === "auto" ? 0 : Number(after.zIndex),
+        imageZ: img ? Number(getComputedStyle(img).zIndex || 0) : 0,
+        background: after.backgroundImage,
+      };
+    });
+
+    expect(scrim.content).not.toBe("none");
+    expect(scrim.position).toBe("absolute");
+    expect(scrim.background).toContain("linear-gradient");
+    expect(scrim.scrimZ, `scrim z ${scrim.scrimZ} vs image z ${scrim.imageZ}`).toBeGreaterThan(scrim.imageZ);
+  });
+});
+
+/* ============================================================
+   The detail sheet on a phone is a two-column layout: a 92px poster and
+   the text column beside it. Long titles and long button labels used to
+   push past the dialog's right edge, where they were clipped to the
+   viewport and unreachable (the sheet only scrolls vertically).
+   ============================================================ */
+test.describe("detail sheet on phones", () => {
+  test("long titles and action labels stay inside the sheet", async ({ page }) => {
+    const events = defaultEvents();
+    const longTitle = "Steel Ball Run JoJo's Bizarre Adventure 2nd and 3rd Stage";
+    await mockAniList(page, {
+      ...standardSchedules(events),
+      details: (vars) =>
+        detailsPayload(
+          makeMedia(vars.id, longTitle, {
+            episodes: 11,
+            genres: ["Action", "Adventure", "Drama", "Mystery", "Supernatural"],
+          })
+        ),
+    });
+
+    for (const width of [360, 390]) {
+      await page.setViewportSize({ width, height: 780 });
+      await page.goto("/");
+      await expect(page.locator(".card, .lead-panel")).toHaveCount(3);
+      await page.locator('[data-action="detail"]').first().click();
+      await expect(page.locator("#detail-dialog")).toBeVisible();
+      await expect(page.locator("#detail-title")).toContainText("Steel Ball Run");
+      await page.waitForTimeout(250);
+
+      const overflow = await page.evaluate(() => {
+        const dialog = document.querySelector("#detail-dialog");
+        const box = dialog.getBoundingClientRect();
+        const offenders = [];
+        for (const element of document.querySelectorAll("#detail-content *")) {
+          const rect = element.getBoundingClientRect();
+          if (rect.width === 0) continue;
+          const spillsRight = rect.right > box.right + 1 || rect.left < box.left - 1;
+          const clipsContent = element.clientWidth > 0 && element.scrollWidth > element.clientWidth + 2;
+          if (spillsRight || clipsContent) {
+            offenders.push(
+              `${element.tagName.toLowerCase()}.${String(element.className).slice(0, 24)} ` +
+                `right=${Math.round(rect.right)} vs ${Math.round(box.right)}, ` +
+                `scroll=${element.scrollWidth}/${element.clientWidth}`
+            );
+          }
+        }
+        return offenders;
+      });
+
+      expect(overflow, `at ${width}px:\n${overflow.join("\n")}`).toEqual([]);
+      await page.keyboard.press("Escape");
+      await expect(page.locator("#detail-dialog")).toBeHidden();
+    }
+  });
+});
+
+/* ============================================================
+   The ticker rewrites countdown text every second. A countdown span that
+   also holds the airing time ("in 2h · Thu, Nov 5, 8:00 PM UTC") lost it
+   on the first tick, because textContent replacement drops child nodes:
+   the exact air time vanished one second after every load.
+   ============================================================ */
+test.describe("live countdowns", () => {
+  test("keep the airing time and its own value after ticking", async ({ page }) => {
+    const events = defaultEvents();
+    await mockAniList(page, standardSchedules(events));
+    await page.goto("/");
+
+    const airing = page.locator(".card__airing").first();
+    await expect(airing).toBeVisible();
+    const before = (await airing.innerText()).replace(/\s+/g, " ");
+    expect(before).toMatch(/·/); // countdown + separator + time
+
+    // Two seconds of real ticks.
+    await page.waitForTimeout(2400);
+
+    const after = (await airing.innerText()).replace(/\s+/g, " ");
+    expect(after).toMatch(/·/);
+    expect(after).toMatch(/UTC|AM|PM/);
+
+    // The exact air time is the half that must not move. The countdown
+    // itself is allowed to cross an hour boundary while we wait.
+    const timeOf = (text) => text.split("·").pop().trim();
+    expect(timeOf(after)).toBe(timeOf(before));
+    expect(after.split("·")[0].trim()).toMatch(/^in /);
+  });
+});
+
+/* ============================================================
+   "Aired earlier today" rows carry five children (clock, poster, body,
+   ago, actions) like every other row, but the compact variant declared
+   only four grid tracks. Everything shifted one column left, so the
+   poster landed in the 1fr track: a 100px thumbnail rendered 640px wide
+   and 966px tall, taller than the feature above it.
+   ============================================================ */
+test.describe("today's already-aired rows", () => {
+  test("keep the poster in its own column at its own size", async ({ page }) => {
+    const now = Math.floor(Date.now() / 1000);
+    const events = defaultEvents();
+    await mockAniList(
+      page,
+      standardSchedules({
+        ...events,
+        upcoming: [
+          ...events.upcoming,
+          // Already aired today, so it lands in the "aired earlier" list.
+          makeEvent({
+            id: 9009,
+            episode: 3,
+            airingAt: now - 3600,
+            media: makeMedia(191, "Yesterday's News"),
+          }),
+        ],
+      })
+    );
+
+    await page.goto("/");
+    const row = page.locator(".today-past .row").first();
+    await expect(row).toBeVisible();
+
+    const sizes = await page.evaluate(() => {
+      const row = document.querySelector(".today-past .row");
+      const poster = row.querySelector(".row__poster");
+      const rowBox = row.getBoundingClientRect();
+      const box = poster.getBoundingClientRect();
+      return {
+        posterWidth: Math.round(box.width),
+        posterHeight: Math.round(box.height),
+        rowHeight: Math.round(rowBox.height),
+      };
+    });
+
+    // A 54px thumbnail stays a 54px thumbnail (2:3, so ~81px tall) and
+    // never outsizes the row that contains it.
+    expect(sizes.posterWidth).toBeLessThanOrEqual(90);
+    expect(sizes.posterHeight).toBeLessThanOrEqual(140);
+    expect(sizes.rowHeight).toBeLessThan(200);
+  });
+});
+
+/* ============================================================
+   Artwork sizing. AniList's field names sit one step below the folders
+   they point at (medium → /cover/small/, large → /cover/medium/,
+   extraLarge → /cover/large/), and those folders are ~100/230/660 px.
+   The srcset descriptors have to describe the FILE: if they understate it,
+   the browser escalates to the biggest artwork for every slot, and the app
+   ships megabytes of images nobody can see.
+   ============================================================ */
+test.describe("artwork sources", () => {
+  test("declare honest widths and a sizes hint on every poster", async ({ page }) => {
+    const events = defaultEvents();
+    await mockAniList(page, standardSchedules(events));
+    await page.goto("/");
+    await expect(page.locator(".card").first()).toBeVisible();
+
+    const posters = await page.evaluate(() =>
+      [...document.querySelectorAll("img[srcset]")].map((img) => ({
+        srcset: img.getAttribute("srcset"),
+        sizes: img.getAttribute("sizes") || "",
+        current: img.currentSrc,
+        rendered: Math.round(img.getBoundingClientRect().width),
+        natural: img.naturalWidth,
+      }))
+    );
+
+    expect(posters.length).toBeGreaterThan(0);
+
+    // Three ascending candidates: 100 / 230 / 660.
+    for (const poster of posters) {
+      const widths = [...poster.srcset.matchAll(/\s(\d+)w/g)].map(([, w]) => Number(w));
+      expect(widths.length, poster.srcset).toBe(3);
+      expect(widths).toEqual([...widths].sort((a, b) => a - b));
+      expect(widths).toEqual([100, 230, 660]);
+    }
+
+    // Anything above the fold must say how wide it will be drawn, or the
+    // browser assumes 100vw and picks the largest file.
+    for (const poster of posters) {
+      expect(poster.sizes, `${poster.current} has no sizes`).not.toBe("");
+    }
+
+    // And what it picked has to be at least as wide as it is drawn.
+    const spotlight = posters.find((p) => p.current.includes("/large/"));
+    if (spotlight) {
+      expect(spotlight.natural).toBeGreaterThanOrEqual(Math.min(spotlight.rendered, 461));
+    }
+  });
+});
 
 test.describe("boot & sections", () => {
   test("loads with branding, upcoming schedule and no page errors", async ({ page }) => {
@@ -81,7 +359,7 @@ test.describe("boot & sections", () => {
     ).toHaveText(["Alpha Show", "Beta Show", "Gamma Show"]);
 
     // Meta carries the count instead of the old filter bar
-    await expect(page.locator("#section-meta")).toContainText("3 episodes");
+    await expect(page.locator("#section-meta")).toContainText("3 loaded");
   });
 
   test("empty schedule shows a friendly empty state", async ({ page }) => {
@@ -165,10 +443,10 @@ test.describe("watchlist lifecycle", () => {
     await page.click('.nav__link[data-nav="watchlist"]');
     await expect(page.locator(".card")).toHaveCount(1);
     await expect(page.locator(".stat__value").first()).toHaveText("1");
-    await expect(page.locator(".bump-btn")).toBeVisible();
+    await expect(page.locator(".step-btn").first()).toBeVisible();
 
     // +1 progress persists
-    await page.locator(".bump-btn[data-delta='1']").click();
+    await page.locator(".step-btn[data-delta='1']").first().click();
     await expect(page.locator(".card__progress-text")).toContainText("1/12");
 
     // Reload → still there
@@ -180,7 +458,7 @@ test.describe("watchlist lifecycle", () => {
 
     // Unsave from the card
     await page.locator(".card__save").click();
-    await expect(page.locator("#toast")).toHaveText(/Removed from watchlist/);
+    await expect(page.locator("#toast")).toHaveText(/Removed/);
     await expect(page.locator(".empty h2")).toHaveText("Your watchlist is empty");
   });
 
@@ -192,7 +470,8 @@ test.describe("watchlist lifecycle", () => {
         title: { romaji: "Seeded", english: "Seeded Show", native: "" },
         coverImage: { medium: null, large: null, extraLarge: null },
         format: "TV",
-        status: "RELEASING",
+        mediaStatus: "RELEASING",
+        listStatus: "watching",
         episodes: 24,
         duration: 24,
         averageScore: 88,
@@ -208,7 +487,8 @@ test.describe("watchlist lifecycle", () => {
         title: { romaji: "Done", english: "Finished Show", native: "" },
         coverImage: { medium: null, large: null, extraLarge: null },
         format: "TV",
-        status: "FINISHED",
+        mediaStatus: "FINISHED",
+        listStatus: "completed",
         episodes: 12,
         duration: 24,
         averageScore: 80,

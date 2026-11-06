@@ -26,7 +26,7 @@
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .section-head__eyebrow::before {
@@ -99,21 +99,32 @@
   animation: spotlight-in 1.2s var(--ease-out) both;
 }
 
+/* The feature image is the largest thing on screen: it must paint the
+   moment it decodes. A transform settle still reads as arrival; holding
+   it at opacity 0 for a second only delays what people came to see. */
 @keyframes spotlight-in {
   from {
-    opacity: 0;
     transform: scale(1.09);
   }
   to {
-    opacity: 1;
     transform: scale(1.02);
   }
 }
 
+/* No blur-up on the hero: it is the LCP element. */
+.spotlight__poster img[data-blur-up] {
+  filter: none;
+  opacity: 1;
+}
+
+/* The scrim has to sit above the artwork: the poster is a direct child
+   with z-index 1, so an auto-stacked ::after painted behind it and the
+   fade never existed. */
 .spotlight__poster::after {
   content: "";
   position: absolute;
   inset: 0;
+  z-index: 2;
   background: linear-gradient(
     90deg,
     var(--paper) 0%,
@@ -147,7 +158,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--sp-2);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .spotlight__label::before {
@@ -173,7 +184,7 @@
 }
 
 .spotlight__title button:hover {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .spotlight__meta {
@@ -198,7 +209,7 @@
   font-size: clamp(1.6rem, 1rem + 2.2vw, 2.6rem);
   letter-spacing: -0.02em;
   line-height: 1;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .spotlight__countdown-time {
@@ -352,7 +363,7 @@
 }
 
 .lead-panel__ep {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .lead-panel__title {
@@ -370,7 +381,7 @@
 }
 
 .lead-panel:hover .lead-panel__title {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .lead-panel__time {
@@ -384,7 +395,7 @@
   font-family: var(--font-mono);
   font-size: var(--text-2xs);
   letter-spacing: 0.06em;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .lead-panel__clock {
@@ -422,24 +433,38 @@
   color: var(--text-faint);
 }
 
-.today-past .row {
-  padding: var(--sp-2) 0;
-  opacity: 0.62;
-  transition: opacity var(--dur-fast) linear;
+/* Quiet, not dim. A blanket opacity would drag the meta line under
+   4.5:1; instead the thumbnail loses colour and the title steps back a
+   tier, which reads just as secondary and stays legible. */
+.today-past .row__poster img {
+  filter: saturate(0.45) brightness(0.82);
+  transition: filter var(--dur-base) linear;
 }
 
-.today-past .row:hover {
-  opacity: 1;
+.today-past .row:hover .row__poster img {
+  filter: none;
 }
 
+.today-past .row__title {
+  color: var(--text-dim);
+}
+
+.today-past .row:hover .row__title {
+  color: var(--accent-text);
+}
+
+/* Five children, five tracks — the base .row declares clock, poster,
+   body, ago and actions, and a four-track override shifted every child
+   one column left: the 54px poster landed in the 1fr track and rendered
+   hundreds of pixels wide. */
 .today-past .row {
-  grid-template-columns: 52px minmax(0, 1fr) auto auto;
-  gap: var(--sp-3-5);
+  grid-template-columns: 52px 40px minmax(0, 1fr) auto auto;
+  gap: var(--sp-3);
   padding: var(--sp-2-5) 0;
 }
 
 .today-past .row__poster {
-  width: auto;
+  width: 40px;
 }
 
 .today-past .row__title {
@@ -451,10 +476,68 @@
 }
 
 .today-past .row__meta {
-  font-size: 0.58rem;
+  font-size: 0.74rem;
 }
 
 /* Rows already aired today don't need the time or Details clutter */
 .today-past .row__actions .btn {
   display: none;
+}
+
+/* Spotlight fallback: typographic poster plate when AniList has no art */
+.spotlight__poster-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--sp-6);
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      transparent 0 7px,
+      color-mix(in srgb, var(--tint, var(--border)) 9%, transparent) 7px 8px
+    ),
+    linear-gradient(150deg, color-mix(in srgb, var(--tint, #333) 34%, var(--paper)), var(--paper) 78%);
+}
+
+.spotlight__poster-mark {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(3rem, 9vw, 7rem);
+  line-height: 0.85;
+  letter-spacing: -0.04em;
+  color: color-mix(in srgb, var(--tint, var(--text)) 62%, transparent);
+}
+
+.spotlight__poster-title {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  max-width: 24ch;
+}
+
+.spotlight__poster > .card__poster {
+  position: relative;
+  z-index: 1;
+}
+
+/* Keep the plate's caption readable through the scrim */
+.spotlight__poster-fallback { z-index: 0; }
+.spotlight__poster-title {
+  position: relative;
+  z-index: 3;
+  color: var(--text);
+  opacity: 0.9;
+}
+.spotlight .spotlight__poster::after {
+  background: linear-gradient(
+    90deg,
+    var(--paper) 0%,
+    color-mix(in srgb, var(--paper) 70%, transparent) 20%,
+    color-mix(in srgb, var(--paper) 10%, transparent) 52%,
+    transparent 100%
+  );
 }

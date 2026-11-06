@@ -33,6 +33,16 @@ export function clockText(date, zone, hour12) {
   }).format(date);
 }
 
+/** Compact wall time for a zone: "14:03" or "2:03 PM" (rundown gutter). */
+export function shortTime(date, zone, hour12) {
+  return new Intl.DateTimeFormat(undefined, {
+    timeZone: zone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: hour12 ? "h12" : "h23",
+  }).format(date);
+}
+
 /** Format a long date for a zone: "Wednesday, November 4, 2026". */
 export function longDate(date, zone) {
   return new Intl.DateTimeFormat(undefined, {

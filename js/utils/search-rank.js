@@ -105,3 +105,89 @@ export function rank(query, items) {
     )
     .map((entry) => entry.media);
 }
+
+/* ------------------------------------------------------------
+   Match ranges + safe highlighting
+
+   Ranges are computed against the original string, so callers can
+   escape first and wrap second. Fuzzy matches highlight the word
+   that was close enough to match, never the whole string.
+   ------------------------------------------------------------ */
+
+const WORD_SPAN = /[\p{L}\p{N}]+/gu;
+
+/** Character ranges in `text` that match `query`, merged and sorted. */
+export function matchRanges(text, query) {
+  const source = String(text ?? "");
+  const tokens = normalize(query).split(" ").filter(Boolean).slice(0, 8);
+  if (!source || !tokens.length) return [];
+
+  const ranges = [];
+  const lower = source.toLocaleLowerCase();
+  const lowered = tokens.map((token) => token.toLocaleLowerCase());
+
+  for (const token of lowered) {
+    let from = 0;
+    while (token.length && from <= lower.length - token.length) {
+      const index = lower.indexOf(token, from);
+      if (index < 0) break;
+      ranges.push([index, index + token.length]);
+      from = index + token.length;
+    }
+  }
+
+  if (ranges.length) return merge(ranges);
+
+  // No direct substring: fall back to fuzzy word matching.
+  for (const match of source.matchAll(WORD_SPAN)) {
+    const word = normalize(match[0]);
+    if (!word) continue;
+    for (const token of tokens) {
+      if (token.length < 3) continue;
+      const limit = token.length <= 6 ? 1 : 2;
+      if (word.startsWith(token) || distance(token, word) <= limit) {
+        ranges.push([match.index, match.index + match[0].length]);
+        break;
+      }
+    }
+  }
+  return merge(ranges);
+}
+
+function merge(ranges) {
+  const sorted = ranges.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const out = [];
+  for (const range of sorted) {
+    const last = out[out.length - 1];
+    if (last && range[0] <= last[1]) last[1] = Math.max(last[1], range[1]);
+    else out.push([range[0], range[1]]);
+  }
+  return out;
+}
+
+const ESCAPE_MAP = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (character) => ESCAPE_MAP[character]);
+}
+
+/**
+ * Escape `text` and wrap the matching parts in <mark>.
+ * User/API text can never inject markup: every segment is escaped
+ * before it becomes HTML.
+ */
+export function highlightText(text, query) {
+  const source = String(text ?? "");
+  const ranges = matchRanges(source, query);
+  if (!ranges.length) return escapeHtml(source);
+
+  let html = "";
+  let cursor = 0;
+  for (const [start, end] of ranges) {
+    html += escapeHtml(source.slice(cursor, start));
+    html += `<mark>${escapeHtml(source.slice(start, end))}</mark>`;
+    cursor = end;
+  }
+  html += escapeHtml(source.slice(cursor));
+  return html;
+}

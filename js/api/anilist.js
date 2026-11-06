@@ -66,7 +66,7 @@ export async function schedule(kind, page = 1, anchor = Math.floor(Date.now() / 
 export async function search(query, signal) {
   const data = await client.request(
     SEARCH_QUERY,
-    { search: query, page: 1, perPage: 20, type: "ANIME" },
+    { search: query, page: 1, perPage: 20, type: "ANIME", isAdult: false },
     { ttl: 300_000, signal }
   );
   const result = pageOf(data);

@@ -145,7 +145,7 @@ test.describe("storage hazards", () => {
     await page.locator("[data-action='save']").first().click();
     await expect(page.locator('.nav__count[data-nav-count]')).toHaveText("1");
     const repaired = await page.evaluate(
-      (key) => JSON.parse(localStorage.getItem(key)).version === 2,
+      (key) => JSON.parse(localStorage.getItem(key)).version === 3,
       WL_KEY
     );
     expect(repaired).toBe(true);
@@ -324,7 +324,7 @@ test.describe("multi-tab & environment", () => {
     await expect(page.locator(".card, .lead-panel")).toHaveCount(1);
     // No art anywhere → titled placeholder instead of a broken image
     await expect(page.locator(".card__poster-fallback")).toBeVisible();
-    await expect(page.locator(".card__poster-fallback span")).toContainText("No Art Show");
+    await expect(page.locator(".card__poster-title")).toContainText("No Art Show");
     // No broken <img>
     expect(await page.locator(".card img, .lead-panel img").count()).toBe(0);
   });

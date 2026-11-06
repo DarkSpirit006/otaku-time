@@ -1,0 +1,180 @@
+/* ============================================================
+   Otaku Time — command palette + shortcut help
+   ============================================================ */
+
+.dialog--palette {
+  width: min(620px, calc(100vw - 32px));
+  margin: 12vh auto auto;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-dialog);
+}
+
+.dialog--palette::backdrop {
+  background: var(--overlay);
+}
+
+.palette__field {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: var(--hair) solid var(--border);
+}
+
+.palette__icon {
+  width: 18px;
+  height: 18px;
+  color: var(--text-faint);
+  flex: none;
+}
+
+.palette__field input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  padding: var(--sp-1) 0;
+  outline: none;
+}
+
+.palette__field kbd,
+.palette__hint kbd {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  border: 1px solid var(--border);
+  padding: 2px 5px;
+  color: var(--text-faint);
+}
+
+.palette__list {
+  max-height: min(52vh, 420px);
+  overflow-y: auto;
+  padding: var(--sp-2) 0;
+}
+
+.palette__group {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  padding: var(--sp-2) var(--sp-4) var(--sp-1);
+}
+
+.palette__item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2-5);
+  width: 100%;
+  padding: var(--sp-2) var(--sp-4);
+  border: none;
+  background: none;
+  color: var(--text-dim);
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+}
+
+.palette__item.is-active {
+  background: var(--surface-2);
+  color: var(--text);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.palette__item-icon {
+  display: inline-flex;
+  color: var(--text-faint);
+}
+
+.palette__item-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.palette__item-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.palette__item-hint {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.palette__empty {
+  padding: var(--sp-4);
+  color: var(--text-faint);
+  font-size: var(--text-sm);
+}
+
+.palette__hint {
+  border-top: var(--hair) solid var(--border-faint);
+  padding: var(--sp-2) var(--sp-4);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--text-faint);
+  letter-spacing: 0.04em;
+}
+
+/* ---------- Shortcut help ---------- */
+
+.dialog--help {
+  width: min(560px, calc(100vw - 32px));
+  padding: 0;
+}
+
+.shortcut-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.shortcut {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: var(--sp-3);
+  align-items: baseline;
+  padding: var(--sp-2) 0;
+  border-bottom: var(--hair) solid var(--border-faint);
+}
+
+.shortcut dt {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-dim);
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.shortcut dt kbd {
+  border: 1px solid var(--border);
+  padding: 1px 5px;
+  font-family: inherit;
+  font-size: var(--text-2xs);
+  color: var(--text);
+}
+
+.shortcut dd {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+@media (max-width: 520px) {
+  .shortcut {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}

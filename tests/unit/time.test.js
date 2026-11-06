@@ -12,6 +12,7 @@ import {
   dayLabel,
   isTodayOrTomorrow,
   clockText,
+  shortTime,
 } from "../../js/utils/time.js";
 
 test("validZone accepts real IANA zones and rejects junk", () => {
@@ -100,4 +101,22 @@ test("clockText honours hour12 preference", () => {
   assert.equal(clockText(date, "UTC", false), "14:05:09");
   const h12 = clockText(date, "UTC", true);
   assert.match(h12, /02:05:09\s?PM/i);
+});
+
+/* ------------------------------------------------------------
+   Compact airing clock (rundown gutter)
+   ------------------------------------------------------------ */
+
+test("shortTime is a compact wall time, zero-padded in 24h", () => {
+  const date = new Date(Date.UTC(2026, 10, 5, 9, 4, 0));
+  assert.equal(shortTime(date, "UTC", false), "09:04");
+  // 12h keeps the same two-digit gutter so the rundown column stays aligned.
+  const twelve = shortTime(date, "UTC", true);
+  assert.match(twelve, /^09:04\s?(AM|am)$/);
+});
+
+test("shortTime converts across zones without weekday noise", () => {
+  const date = new Date(Date.UTC(2026, 10, 5, 21, 30, 0));
+  assert.equal(shortTime(date, "Asia/Tokyo", false), "06:30");
+  assert.equal(shortTime(date, "America/New_York", false), "16:30");
 });

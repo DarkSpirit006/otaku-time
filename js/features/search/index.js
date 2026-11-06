@@ -87,7 +87,7 @@ function grid(results, prefs, query, ctx) {
     .map((media, index) =>
       eventCard({ media }, prefs, { query }).replace(
         "<article class=",
-        `<article style="--stagger:${Math.min(index, 10)}" class=`
+        `<article class=`
       )
     )
     .join("");

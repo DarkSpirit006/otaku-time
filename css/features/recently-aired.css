@@ -1,6 +1,7 @@
 /* ============================================================
    Otaku Time — Recently aired
-   A broadcast rundown: timestamped log lines, hairline separated.
+   A broadcast rundown: a time gutter, numbered log lines, day
+   rules, and one lede row for the most recent episode.
    ============================================================ */
 
 .timeline {
@@ -27,20 +28,49 @@
   }
 }
 
+/* ---------- Day rule ---------- */
+
+.timeline .day-group {
+  margin-top: var(--sp-6);
+}
+
+.timeline .day-group__head {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--paper);
+  padding: var(--sp-2) 0;
+}
+
 .timeline__list {
+  position: relative;
   display: flex;
   flex-direction: column;
-  border-top: var(--hair) solid var(--border);
 }
+
+/* The rundown's vertical rule: a hairline between the time gutter
+   and the artwork, running the full height of the day's list. */
+.timeline__list::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 86px;
+  width: 1px;
+  background: var(--border-faint);
+  pointer-events: none;
+}
+
+/* ---------- Row ---------- */
 
 .row {
   position: relative;
   display: grid;
-  grid-template-columns: 54px minmax(0, 1fr) auto auto;
+  grid-template-columns: 74px 54px minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: var(--sp-4);
-  padding: var(--sp-3) 0;
-  border-bottom: var(--hair) solid var(--border);
+  gap: var(--sp-3);
+  padding: var(--sp-2-5) 0 var(--sp-2-5) 0;
+  border-bottom: var(--hair) solid var(--border-faint);
   transition: background-color var(--dur-fast) linear;
 }
 
@@ -48,15 +78,54 @@
   background: color-mix(in srgb, var(--text) 2.5%, transparent);
 }
 
+.row:last-child {
+  border-bottom-color: var(--border);
+}
+
+.row__clock {
+  margin: 0;
+  padding-right: var(--sp-3);
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .row__poster {
   position: relative;
+  margin-left: var(--sp-3);
   aspect-ratio: 2 / 3;
   overflow: hidden;
   background: var(--surface-3);
   border: var(--hair) solid var(--border);
 }
 
+.row__plate {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      transparent 0 5px,
+      color-mix(in srgb, var(--tint, var(--border)) 12%, transparent) 5px 6px
+    ),
+    linear-gradient(160deg, color-mix(in srgb, var(--tint, #333) 30%, var(--surface-3)), var(--surface-3));
+}
+
+.row__plate span {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.3rem;
+  color: color-mix(in srgb, var(--tint, var(--text)) 60%, var(--text));
+}
+
 .row__poster img {
+  position: relative;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -95,7 +164,7 @@
 }
 
 .row:hover .row__title {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .row__meta {
@@ -124,7 +193,7 @@
 }
 
 .row__ago.is-recent {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .row__actions {
@@ -147,6 +216,119 @@
 
 .row .save-btn.is-saved {
   background: var(--accent);
-  border-color: var(--accent);
+  border-color: var(--accent-text);
   color: var(--accent-ink);
+}
+
+/* ---------- Lede row: the freshest episode ---------- */
+
+.row--lede {
+  grid-template-columns: 74px 92px minmax(0, 1fr) auto auto;
+  gap: var(--sp-4);
+  padding: var(--sp-4) 0;
+  border-bottom: var(--hair) solid var(--border-strong);
+}
+
+.row--lede::before {
+  content: "";
+  position: absolute;
+  left: -14px;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  background: var(--accent);
+}
+
+.row--lede .row__title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.35rem, 1rem + 1.1vw, 1.95rem);
+  line-height: 1.03;
+  letter-spacing: -0.02em;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.row--lede .row__clock {
+  color: var(--accent-text);
+  font-size: var(--text-xs);
+}
+
+.row--lede .row__poster {
+  border-color: var(--border-strong);
+}
+
+.row--lede .row__ago {
+  font-size: var(--text-sm);
+}
+
+/* ---------- Loading tail ---------- */
+
+.loading-more {
+  margin: var(--sp-5) 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 900px) {
+  .timeline__list::before {
+    display: none;
+  }
+
+  .row,
+  .row--lede {
+    grid-template-columns: 56px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "poster body ago"
+      "poster actions actions";
+    align-items: start;
+    row-gap: var(--sp-2);
+    column-gap: var(--sp-3);
+  }
+
+  .row__clock {
+    display: none;
+  }
+
+  .row__poster {
+    margin-left: 0;
+  }
+
+  .row--lede::before {
+    left: -8px;
+  }
+
+  .row__poster {
+    grid-area: poster;
+    align-self: center;
+  }
+
+  .row__body {
+    grid-area: body;
+    padding-top: 2px;
+  }
+
+  .row__ago {
+    grid-area: ago;
+    align-self: start;
+  }
+
+  .row__actions {
+    grid-area: actions;
+    justify-self: start;
+  }
+
+  .row--lede {
+    grid-template-columns: 84px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "poster body ago"
+      "poster actions actions";
+  }
 }

@@ -194,7 +194,7 @@
 
 .save-btn.is-saved {
   background: var(--accent);
-  border-color: var(--accent);
+  border-color: var(--accent-text);
   color: var(--accent-ink);
 }
 
@@ -249,7 +249,7 @@
 
 .bump-btn:hover:not(:disabled) {
   background: var(--accent);
-  border-color: var(--accent);
+  border-color: var(--accent-text);
   color: var(--accent-ink);
 }
 
@@ -287,24 +287,24 @@
 
 .badge--accent {
   border-color: color-mix(in srgb, var(--accent) 55%, transparent);
-  color: var(--accent);
+  color: var(--accent-text);
   background: var(--accent-soft);
 }
 
 .badge--score {
   border-color: color-mix(in srgb, var(--gold) 50%, transparent);
-  color: var(--gold);
+  color: var(--gold-text);
   background: var(--gold-soft);
 }
 
 .badge--live {
   border-color: color-mix(in srgb, var(--accent) 55%, transparent);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .badge--pink {
   border-color: color-mix(in srgb, var(--accent) 40%, transparent);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 /* ---------- Theme toggle icon swap ---------- */

@@ -50,7 +50,7 @@
 }
 
 .brand:hover .brand__name {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .brand__name,
@@ -75,16 +75,20 @@
   width: 2px;
   height: 44px;
   background: var(--accent);
-  transform: translateY(var(--indicator-y, 0px));
+  transform: translateY(0);
   opacity: 0;
   transition:
     transform var(--dur-base) var(--ease-out),
     opacity var(--dur-base) linear;
 }
 
-.nav__indicator.is-visible {
+.nav.has-active .nav__indicator {
   opacity: 1;
 }
+
+.nav[data-active="0"] .nav__indicator { transform: translateY(0); }
+.nav[data-active="1"] .nav__indicator { transform: translateY(44px); }
+.nav[data-active="2"] .nav__indicator { transform: translateY(88px); }
 
 .nav__link {
   counter-increment: nav-index;
@@ -106,7 +110,7 @@
 .nav__link::before {
   content: counter(nav-index, decimal-leading-zero);
   font-family: var(--font-mono);
-  font-size: 0.62rem;
+  font-size: 0.72rem;
   font-weight: 400;
   letter-spacing: 0.06em;
   color: var(--text-faint);
@@ -122,7 +126,7 @@
 }
 
 .nav__link:hover::before {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .nav__link.is-active {
@@ -136,7 +140,7 @@
 }
 
 .nav__link.is-active::before {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .nav__count,
@@ -149,7 +153,7 @@
   background: var(--accent);
   color: var(--accent-ink);
   font-family: var(--font-mono);
-  font-size: 0.64rem;
+  font-size: 0.74rem;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
@@ -218,7 +222,7 @@
 }
 
 .sync[data-state="error"] .sync__text {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .sync[data-state="cache"] .sync__dot {
@@ -258,6 +262,12 @@
   /* Full-bleed children may paint past the canvas; clip without
      creating a scroll container (sticky topbar keeps working). */
   overflow-x: clip;
+}
+
+.main-column {
+  /* Keep the footer at the bottom of the first viewport so it does not
+     jump down when the schedule arrives (that shift is pure noise). */
+  min-height: calc(100dvh - var(--topbar-h));
 }
 
 .topbar {
@@ -302,7 +312,7 @@
 }
 
 .search:focus-within {
-  border-color: var(--accent);
+  border-color: var(--accent-text);
 }
 
 .search__icon {
@@ -319,11 +329,18 @@
   stroke: var(--accent);
 }
 
-.search input {
+/* Specificity is deliberate: components/forms.css loads after this file
+   and styles input[type="search"] for real form fields. The topbar field
+   is an underline, not a box — it must opt out of that treatment, and it
+   must not inherit the 40px min-height that would overflow a 38px row. */
+.search input[type="search"] {
   flex: 1;
   min-width: 0;
   height: 100%;
-  border: none;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
   background: none;
   outline: none;
   font-size: var(--text-md);
@@ -347,7 +364,7 @@
   border: var(--hair) solid var(--border);
   color: var(--text-faint);
   font-family: var(--font-mono);
-  font-size: 0.62rem;
+  font-size: 0.72rem;
 }
 
 .search:focus-within .search__kbd {
@@ -374,7 +391,7 @@
 }
 
 .search__clear:hover {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .topbar__extras {
@@ -407,7 +424,7 @@
 }
 
 .clock__date {
-  font-size: 0.6rem;
+  font-size: 0.72rem;
   letter-spacing: 0.12em;
 }
 
@@ -461,8 +478,8 @@
 }
 
 .footer a:hover {
-  color: var(--accent);
-  border-color: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--accent-text);
 }
 
 /* ------------------------------------------------------------
@@ -540,3 +557,140 @@
 .footer__meta a {
   border-bottom: var(--hair) solid var(--border);
 }
+
+/* ============================================================
+   v3 chrome: offline bar, toast action, nav numbers, segments
+   ============================================================ */
+
+.nav__link.is-active::before { color: var(--accent-text); }
+
+.offline-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--content-pad);
+  background: var(--accent-soft);
+  border-bottom: var(--hair) solid var(--accent);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+
+.offline-bar[hidden] { display: none; }
+
+.offline-bar__dot {
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  flex: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.toast__text { min-width: 0; }
+
+.toast__action {
+  flex: none;
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: inherit;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+
+.toast__action:hover { border-color: currentColor; }
+.toast__action[hidden] { display: none; }
+
+/* Segmented control (Timeline / Calendar) */
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--border);
+}
+
+.seg-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1-5);
+  padding: 6px 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.seg-btn svg { width: 13px; height: 13px; }
+
+.seg-btn + .seg-btn { border-left: 1px solid var(--border); }
+
+.seg-btn.is-active {
+  background: var(--text);
+  color: var(--text-invert);
+}
+
+.svg-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.link-btn {
+  border: none;
+  background: none;
+  color: var(--accent-text);
+  font: inherit;
+  padding: 0 4px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Skeleton rows + calendar skeletons */
+.skeleton-rows { display: grid; gap: var(--sp-2); }
+
+.skeleton-row {
+  display: grid;
+  grid-template-columns: 54px 1fr;
+  gap: var(--sp-3);
+  padding: var(--sp-2) 0;
+  border-bottom: var(--hair) solid var(--border-faint);
+}
+
+.skeleton-row__poster {
+  width: 54px;
+  height: 81px;
+  background: var(--skeleton-a);
+}
+
+.skeleton-row__body { display: grid; gap: var(--sp-2); align-content: center; }
+
+.skeleton-cal {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
+}
+
+.skeleton-cal__col { display: grid; gap: var(--sp-2); align-content: start; }
+
+.skeleton-cal__head { height: 28px; background: var(--skeleton-a); }
+.skeleton-cal__slot { height: 54px; background: var(--skeleton-a); }
+
+/* Tab-bar indicator: three equal thirds, moved by index */
+.tabbar[data-active="0"] .tabbar__indicator { transform: translateX(0%); }
+.tabbar[data-active="1"] .tabbar__indicator { transform: translateX(100%); }
+.tabbar[data-active="2"] .tabbar__indicator { transform: translateX(200%); }

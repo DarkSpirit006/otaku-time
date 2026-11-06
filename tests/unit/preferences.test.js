@@ -37,12 +37,12 @@ test("valid stored values are preserved", () => {
     }),
   });
   const prefs = createPreferences(storage);
-  assert.deepEqual(prefs.get(), {
-    timezone: "Asia/Tokyo",
-    hour12: false,
-    notifications: true,
-    reminder: 30,
-  });
+  const values = prefs.get();
+  assert.equal(values.timezone, "Asia/Tokyo");
+  assert.equal(values.hour12, false);
+  assert.equal(values.notifications, true);
+  assert.equal(values.reminder, 30);
+  assert.deepEqual(values.quietHours, { enabled: false, start: "22:00", end: "07:00" });
 });
 
 test("invalid timezone falls back to the detected zone", () => {
@@ -72,12 +72,11 @@ test("set() patches, clamps and persists", () => {
   const storage = fakeStorage();
   const prefs = createPreferences(storage);
   prefs.set({ reminder: 45, hour12: false, timezone: "America/New_York" });
-  assert.deepEqual(prefs.get(), {
-    timezone: "America/New_York",
-    hour12: false,
-    notifications: false,
-    reminder: 45,
-  });
+  const values = prefs.get();
+  assert.equal(values.timezone, "America/New_York");
+  assert.equal(values.hour12, false);
+  assert.equal(values.notifications, false);
+  assert.equal(values.reminder, 45);
   const stored = JSON.parse(storage.dump()[PREFS_KEY]);
   assert.equal(stored.version, 2);
   assert.equal(stored.reminder, 45);

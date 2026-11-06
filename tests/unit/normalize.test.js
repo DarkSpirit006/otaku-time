@@ -120,3 +120,23 @@ test("validMediaList drops invalid and adult entries", () => {
   assert.equal(list.length, 1);
   assert.equal(list[0].id, 16498);
 });
+
+test("cover colours are only accepted in hex form", () => {
+  assert.equal(normalizeMedia({ id: 1, coverImage: { color: "#3b4A6b" } }).coverImage.color, "#3b4a6b");
+  assert.equal(normalizeMedia({ id: 1, coverImage: { color: "#abc" } }).coverImage.color, "#abc");
+  assert.equal(normalizeMedia({ id: 1, coverImage: { color: "red" } }).coverImage.color, null);
+  assert.equal(normalizeMedia({ id: 1, coverImage: { color: "url(javascript:1)" } }).coverImage.color, null);
+});
+
+test("streaming links keep their type and language", () => {
+  const media = normalizeMedia({
+    id: 1,
+    externalLinks: [
+      { site: "Crunchyroll", url: "https://crunchyroll.com/x", type: "STREAMING", language: "English" },
+      { site: "Official Site", url: "https://example.com" },
+    ],
+  });
+  assert.equal(media.externalLinks[0].type, "STREAMING");
+  assert.equal(media.externalLinks[0].language, "English");
+  assert.equal("type" in media.externalLinks[1], false);
+});

@@ -114,3 +114,24 @@ export async function clearAllSnapshots() {
   await clearSnapshot("recent").then((r) => (ok = ok && r));
   return ok;
 }
+
+/** Read every stored snapshot for undo purposes. */
+export async function snapshotAll() {
+  const out = [];
+  for (const kind of ["upcoming", "recent"]) {
+    const snapshot = await readSnapshot(kind);
+    if (snapshot) out.push({ kind, snapshot });
+  }
+  return out;
+}
+
+/** Restore snapshots captured by snapshotAll(). Returns false on any failure. */
+export async function restoreAll(entries) {
+  if (!Array.isArray(entries) || !entries.length) return false;
+  let ok = true;
+  for (const entry of entries) {
+    const written = await writeSnapshot(entry.kind, entry.snapshot);
+    ok = ok && written;
+  }
+  return ok;
+}

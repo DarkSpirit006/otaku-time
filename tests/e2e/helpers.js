@@ -172,8 +172,17 @@ export function standardSchedules({ upcoming = [], recent = [], more = false } =
 }
 
 /** A small deterministic set of events around "now". */
-export function defaultEvents() {
-  const now = Math.floor(Date.now() / 1000);
+/**
+ * Default schedule fixture.
+ *
+ * `anchor` pins the event times instead of following the real clock. The
+ * visual suite freezes the browser at a fixed instant, so fixtures that
+ * drifted with wall time silently moved events into other days and other
+ * minutes — the baselines rotted on their own. Behavioural suites keep
+ * the default: they assert relative things ("in about an hour").
+ */
+export function defaultEvents(anchor = Math.floor(Date.now() / 1000)) {
+  const now = anchor;
   // Schedule responses carry no description (matches the real query),
   // so opening details always triggers the lazy details fetch.
   const sched = (media) => ({ ...media, description: "" });

@@ -31,6 +31,15 @@
    ≤ 960px — the rail becomes a broadcast tab bar
    ============================================================ */
 @media (max-width: 960px) {
+  /* Phone type scale: the mono labels were set for a wide screen. At
+     arm's length they need to reach 12px, so the two smallest tiers
+     step up rather than being read at 9px. */
+  :root {
+    --text-2xs: 0.75rem;
+    --text-xs: 0.8rem;
+    --text-sm: 0.875rem;
+  }
+
   .app {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -119,7 +128,7 @@
     justify-content: center;
     gap: 3px;
     font-family: var(--font-mono);
-    font-size: 0.6rem;
+    font-size: 0.78rem;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--text-faint);
@@ -137,7 +146,7 @@
   }
 
   .tabbar__link.is-active {
-    color: var(--accent);
+    color: var(--accent-text);
   }
 
   .tabbar__count {
@@ -146,7 +155,7 @@
     left: calc(50% + 8px);
     min-width: 16px;
     height: 16px;
-    font-size: 0.56rem;
+    font-size: 0.72rem;
     padding: 0 3px;
   }
 
@@ -189,8 +198,17 @@
     object-position: center 28%;
   }
 
-  .spotlight__poster::after {
-    background: linear-gradient(180deg, transparent 42%, var(--paper) 100%);
+  /* The content block overlaps the poster by 32px on phones, so the
+     fade must be fully opaque before the eyebrow label starts — red on
+     an arbitrary artwork is unreadable. Stops are measured against
+     .spotlight__label at ~93% of the media height. */
+  .spotlight .spotlight__poster::after {
+    background: linear-gradient(
+      180deg,
+      transparent 36%,
+      color-mix(in srgb, var(--paper) 82%, transparent) 72%,
+      var(--paper) 88%
+    );
   }
 
   .spotlight__content {
@@ -229,7 +247,7 @@
   }
 
   #section-title {
-    font-size: clamp(1.85rem, 8.6vw, 2.7rem);
+    font-size: clamp(2.1rem, 10.4vw, 3rem);
     letter-spacing: -0.05em;
   }
 
@@ -260,7 +278,7 @@
   }
 
   .day-group__count {
-    font-size: 0.6rem;
+    font-size: 0.78rem;
   }
 
   /* Ledger: two rows of two figures */
@@ -397,8 +415,27 @@
     gap: var(--sp-2);
   }
 
+  /* Labels like "Add episode to calendar" are wider than the text column
+     beside the poster. Nowrap buttons therefore punched through the
+     sheet's right edge and were clipped off-screen — the dialog only
+     scrolls vertically. Let them wrap and shrink instead. */
   .detail-actions .btn {
     flex: 1 1 auto;
+    min-width: 0;
+    padding-inline: var(--sp-3);
+    padding-block: var(--sp-2);
+    line-height: 1.25;
+    white-space: normal;
+    text-align: center;
+  }
+
+  /* A single long word ("ADVENTURE") also has to fit the 224px text
+     column beside the poster. Breaking it mid-word reads as a glitch, so
+     the title steps down in size on narrow phones instead — the same
+     move the section mastheads make. */
+  .detail-title {
+    font-size: clamp(1.05rem, 0.35rem + 3.9vw, 1.5rem);
+    overflow-wrap: anywhere;
   }
 
   .detail-external {
@@ -457,9 +494,16 @@
     flex: 1 1 auto;
   }
 
+  /* Two-up on phones. The day-group and library grids carry their own
+     minmax rules further down the cascade, so repeat them here with the
+     specificity to win — a single 358px-wide poster per row is a wall of
+     art, not a schedule. */
   .card-grid,
-  .skeleton-grid {
+  .skeleton-grid,
+  .day-group .card-grid,
+  #app .card-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-4) var(--sp-3);
   }
 
   .stat__value {
@@ -467,11 +511,11 @@
   }
 
   .stat__label {
-    font-size: 0.58rem;
+    font-size: 0.76rem;
   }
 
   .footer {
-    font-size: 0.58rem;
+    font-size: 0.76rem;
   }
 }
 
@@ -502,5 +546,49 @@
 
   .settings-scroll {
     max-height: calc(94dvh - 84px);
+  }
+}
+
+/* ============================================================
+   Section head with a control aside (v3)
+   On narrow screens the view switch drops below the masthead so
+   the title always keeps a full line to itself.
+   ============================================================ */
+@media (max-width: 760px) {
+  .section-head {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--sp-3);
+  }
+
+  .section-head__left { flex: 1 1 100%; }
+
+  .section-head__aside {
+    flex: 1 1 100%;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  #section-title {
+    font-size: clamp(1.9rem, 9vw, 2.9rem);
+    max-width: none;
+  }
+}
+
+/* ============================================================
+   Small phones (≤ 380px): the tab bar and search field must not
+   clip. Labels shrink rather than truncate mid-word, and the
+   search input is allowed to give up width.
+   ============================================================ */
+@media (max-width: 380px) {
+  .tabbar__link {
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    gap: 2px;
+  }
+
+  .tabbar__link svg {
+    width: 16px;
+    height: 16px;
   }
 }

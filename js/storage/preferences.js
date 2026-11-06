@@ -22,11 +22,23 @@ function sanitize(prefs) {
   let reminder = Number(data.reminder);
   if (!Number.isFinite(reminder)) reminder = 15;
   reminder = Math.min(60, Math.max(1, Math.round(reminder)));
+
+  const rawQuiet = data.quietHours && typeof data.quietHours === "object" ? data.quietHours : {};
+  const clock = (value, fallback) =>
+    typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value) ? value : fallback;
+  const quietHours = {
+    enabled: rawQuiet.enabled === true,
+    start: clock(rawQuiet.start, "22:00"),
+    end: clock(rawQuiet.end, "07:00"),
+  };
+
   return {
     timezone,
     hour12: data.hour12 !== false,
     notifications,
     reminder,
+    quietHours,
+    weekStartsOn: data.weekStartsOn === 0 ? 0 : 1,
   };
 }
 

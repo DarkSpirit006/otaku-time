@@ -170,7 +170,7 @@
 
 .card__topline .badge {
   padding: 1px 5px;
-  font-size: 0.6rem;
+  font-size: 0.72rem;
 }
 
 .card__title {
@@ -188,13 +188,13 @@
 }
 
 .card:hover .card__title {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .card__title mark,
 .row__title mark {
   background: none;
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 700;
 }
 
@@ -202,7 +202,7 @@
   font-family: var(--font-mono);
   font-size: var(--text-2xs);
   letter-spacing: 0.04em;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .card__airing.is-past {
@@ -238,7 +238,7 @@
 }
 
 .card__progress-text.is-complete {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .progress-mini {
@@ -346,7 +346,7 @@
   font-size: var(--text-2xs);
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .now-divider span::before {
@@ -433,7 +433,7 @@
 }
 
 .notice--warning {
-  border-left-color: var(--gold);
+  border-left-color: var(--gold-text);
   background: color-mix(in srgb, var(--gold) 6%, transparent);
 }
 
@@ -464,7 +464,7 @@
   height: 44px;
   margin-bottom: var(--sp-1);
   border: var(--hair) solid var(--border-strong);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .empty__icon svg {
@@ -526,4 +526,247 @@
 .loading-more {
   margin: var(--sp-6) 0 0;
   text-align: center;
+}
+
+/* ============================================================
+   v3 additions: tint, segments, status, swipe
+   ============================================================ */
+
+.card__poster-wrap {
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--tint, var(--surface-3)) 32%, transparent), transparent 70%),
+    var(--surface-3);
+}
+
+.card:hover .card__poster-wrap::after,
+.card:focus-within .card__poster-wrap::after {
+  opacity: 0.85;
+}
+
+.card__body {
+  border-top: 1px solid var(--border-faint);
+}
+
+.card:hover .card__title,
+.card:focus-within .card__title {
+  color: var(--text);
+}
+
+.card__synonym {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.02em;
+  color: var(--text-faint);
+  margin-top: 2px;
+}
+
+/* Segmented progress meter — printed dash marks, not a bar */
+.segments {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.segment {
+  width: 100%;
+  height: 3px;
+  background: var(--border);
+  transition: background var(--dur-base) linear;
+}
+
+.segment.is-on {
+  background: var(--accent);
+}
+
+/* Status pill: personal status, distinct from AniList's release state */
+.status-pill {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 5px;
+  border: 1px solid currentColor;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+.status-pill--watching { color: var(--accent-text); }
+.status-pill--planned { color: var(--text-dim); }
+.status-pill--completed { color: var(--ok, #4fae63); }
+.status-pill--dropped { color: var(--text-faint); }
+.status-pill--onhold { color: var(--gold-text); }
+.status-pill.is-auto { border-style: dashed; }
+
+/* Behind badge */
+.card__behind {
+  display: inline-block;
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gold-text);
+}
+
+/* Controls row */
+.card__controls {
+  position: relative;
+  z-index: 2; /* above the full-card open overlay */
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  margin-top: var(--sp-2);
+}
+
+.card__number {
+  width: 52px;
+  text-align: center;
+  height: 28px;
+}
+
+.step-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color var(--dur-fast) linear, background var(--dur-fast) linear;
+}
+
+.step-btn svg {
+  width: 14px;
+  height: 14px;
+  color: var(--text);
+}
+
+.step-btn:hover:not(:disabled) {
+  border-color: var(--text);
+  background: var(--surface-2);
+}
+
+.step-btn--plus {
+  border-color: var(--border-strong);
+}
+
+.step-btn:disabled {
+  opacity: 0.36;
+  cursor: not-allowed;
+}
+
+.step-btn.is-pop svg {
+  animation: step-pop 320ms var(--ease-out);
+}
+
+@keyframes step-pop {
+  0% { transform: scale(0.6); }
+  55% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+.card.is-complete .card__poster { filter: saturate(0.55); }
+
+.badge--change {
+  border: 1px solid var(--gold);
+  color: var(--gold-text);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: var(--text-2xs);
+}
+
+.badge--ok {
+  color: var(--ok, #4fae63);
+  border: 1px solid currentColor;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+}
+
+.badge--genre {
+  cursor: pointer;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font: inherit;
+}
+
+.badge--genre:hover { color: var(--text); border-color: var(--text); }
+
+.card__ep {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Swipe feedback (touch) ---------- */
+.card--saved {
+  touch-action: pan-y;
+}
+
+.card--saved.is-dragging {
+  z-index: 3;
+}
+
+.card--saved.is-swipe-right,
+.card--saved.is-swipe-left {
+  transition: transform 120ms var(--ease-out);
+}
+
+.card--saved.is-swipe-right { transform: translateX(28px); }
+.card--saved.is-swipe-left { transform: translateX(-28px); }
+
+.card--saved.is-swipe-right .card__poster-wrap {
+  box-shadow: inset 4px 0 0 var(--ok, #4fae63);
+}
+
+.card--saved.is-swipe-left .card__poster-wrap {
+  box-shadow: inset -4px 0 0 var(--accent);
+}
+
+@media (hover: hover) {
+  .card--saved { cursor: default; }
+}
+
+/* ---------- Poster fallback plate (no artwork on AniList) ---------- */
+.card__poster-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--sp-3);
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      transparent 0 6px,
+      color-mix(in srgb, var(--tint, var(--border)) 10%, transparent) 6px 7px
+    ),
+    linear-gradient(160deg, color-mix(in srgb, var(--tint, #333) 26%, var(--surface-3)), var(--surface-3));
+}
+
+.card__poster-fallback[hidden] { display: none; }
+
+.card__poster-monogram {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: color-mix(in srgb, var(--tint, var(--text)) 70%, var(--text));
+}
+
+.card__poster-title {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }

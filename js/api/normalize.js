@@ -90,6 +90,7 @@ export function normalizeMedia(raw) {
       medium: imageUrl(cover.medium),
       large: imageUrl(cover.large),
       extraLarge: imageUrl(cover.extraLarge),
+      color: hexColor(cover.color),
     },
     bannerImage: imageUrl(raw.bannerImage),
     studios:
@@ -107,6 +108,13 @@ export function normalizeMedia(raw) {
   };
 }
 
+/** Only #rgb/#rrggbb survive — the value is used for palette tinting. */
+export function hexColor(value) {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(trimmed) ? trimmed.toLowerCase() : null;
+}
+
 function sanitizeDate(value) {
   if (!value || typeof value !== "object") return null;
   const year = int(value.year);
@@ -120,8 +128,15 @@ function sanitizeLinks(value) {
   if (!Array.isArray(value)) return [];
   return value
     .filter((l) => l && typeof l.site === "string" && typeof l.url === "string")
-    .slice(0, 8)
-    .map((l) => ({ site: str(l.site, 60), url: str(l.url, 400) }))
+    .slice(0, 12)
+    .map((l) => {
+      const link = { site: str(l.site, 60), url: str(l.url, 400) };
+      const type = str(l.type, 24);
+      const language = str(l.language, 24);
+      if (type) link.type = type;
+      if (language) link.language = language;
+      return link;
+    })
     .filter((l) => {
       try {
         return new URL(l.url).protocol === "https:";

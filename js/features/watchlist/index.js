@@ -1,54 +1,234 @@
 /* ============================================================
-   Otaku Time — Watchlist section
-   Local data only: stats strip + tracked poster grid,
-   newest additions first. No filters — the list is yours.
+   Otaku Time — Watchlist
+
+   A personal library, not a grid dump: status, progress and the
+   next airing of everything you follow, with sorting, filtering,
+   grouping and manual order.
    ============================================================ */
 
-import { watchlist } from "../../storage/watchlist.js";
+import { watchlist, LIST_STATUSES, LIST_STATUS_LABELS } from "../../storage/watchlist.js";
 import { watchlistCard } from "../../components/card.js";
 import { emptyState, notice, sectionHead } from "../../components/states.js";
+import { airingState, episodesBehind, progressPercent } from "../../utils/media-state.js";
 import { esc } from "../../utils/dom.js";
+import { icon } from "../../components/icons.js";
+
+const SORTS = {
+  added: { label: "Recently added", compare: (a, b) => b.createdAt - a.createdAt },
+  updated: { label: "Recently updated", compare: (a, b) => (b.updatedAt || 0) - (a.updatedAt || 0) },
+  title: {
+    label: "Title",
+    compare: (a, b) => titleKey(a).localeCompare(titleKey(b), undefined, { sensitivity: "base" }),
+  },
+  airing: { label: "Airing soon", compare: (a, b) => airingRank(a) - airingRank(b) },
+  progress: {
+    label: "Progress",
+    compare: (a, b) => (progressPercent(b) ?? -1) - (progressPercent(a) ?? -1),
+  },
+  manual: { label: "Manual order", compare: (a, b) => a.order - b.order || a.id - b.id },
+};
+
+function titleKey(item) {
+  return item.title?.english || item.title?.romaji || item.title?.native || "";
+}
+
+function airingRank(item) {
+  const state = airingState(item);
+  if (state.kind === "countdown" && state.epoch) return state.epoch;
+  if (state.kind === "airing") return Date.now() / 1000;
+  return Number.MAX_SAFE_INTEGER;
+}
+
+export const state = {
+  sort: "added",
+  status: "all",
+  format: "all",
+  genre: "all",
+  progress: "all",
+  group: false,
+};
+
+/* ------------------------------------------------------------ */
 
 function statsBlock(items) {
   const total = items.length;
-  const completed = items.filter(
-    (item) => Number.isInteger(item.episodes) && item.episodes > 0 && item.watched >= item.episodes
-  ).length;
-  const inProgress = items.filter((item) => item.watched > 0).length - completed;
+  const completed = items.filter((item) => item.listStatus === "completed").length;
+  const watching = items.filter((item) => item.listStatus === "watching").length;
   const episodes = items.reduce((sum, item) => sum + (Number.isInteger(item.watched) ? item.watched : 0), 0);
+  const behind = items.reduce((sum, item) => sum + (episodesBehind(item) || 0), 0);
+
+  const stats = [
+    { value: total, label: "Titles" },
+    { value: watching, label: "Watching" },
+    { value: completed, label: "Completed" },
+    { value: episodes, label: "Episodes watched" },
+    { value: behind, label: "Episodes behind" },
+  ];
 
   return `<div class="stats" role="list" aria-label="Watchlist statistics">
-    <div class="stat" role="listitem"><span class="stat__value">${total}</span><span class="stat__label">Titles tracked</span></div>
-    <div class="stat" role="listitem"><span class="stat__value">${Math.max(0, inProgress)}</span><span class="stat__label">In progress</span></div>
-    <div class="stat" role="listitem"><span class="stat__value">${completed}</span><span class="stat__label">Completed</span></div>
-    <div class="stat" role="listitem"><span class="stat__value">${episodes}</span><span class="stat__label">Episodes watched</span></div>
+    ${stats
+      .map(
+        (stat) => `<div class="stat" role="listitem">
+          <span class="stat__value">${stat.value}</span>
+          <span class="stat__label">${stat.label}</span>
+        </div>`
+      )
+      .join("")}
   </div>`;
 }
+
+function selectControl({ id, label, value, options }) {
+  return `<div class="field">
+    <label class="field__label" for="${id}">${esc(label)}</label>
+    <select class="native-select" id="${id}" data-filter="${id}">
+      ${options
+        .map(
+          (option) =>
+            `<option value="${esc(option.value)}" ${option.value === value ? "selected" : ""}>${esc(option.label)}</option>`
+        )
+        .join("")}
+    </select>
+  </div>`;
+}
+
+function toolbar(all) {
+  const formats = [...new Set(all.map((item) => item.format).filter(Boolean))].sort();
+  const genres = [...new Set(all.flatMap((item) => item.genres || []))].sort();
+
+  const statusChip = (value, label) =>
+    `<button class="chip${state.status === value ? " is-active" : ""}" data-action="wl-status"
+      data-value="${value}" aria-pressed="${state.status === value}">${esc(label)}</button>`;
+
+  return `<div class="library-tools">
+    <div class="library-tools__row">
+      <div class="chips" role="group" aria-label="Filter by status">
+        ${statusChip("all", "All")}
+        ${LIST_STATUSES.map((status) => statusChip(status, LIST_STATUS_LABELS[status])).join("")}
+      </div>
+      <div class="library-tools__selects">
+        ${selectControl({
+          id: "sort",
+          label: "Sort",
+          value: state.sort,
+          options: Object.entries(SORTS).map(([value, sort]) => ({ value, label: sort.label })),
+        })}
+        ${selectControl({
+          id: "format",
+          label: "Format",
+          value: state.format,
+          options: [
+            { value: "all", label: "All formats" },
+            ...formats.map((format) => ({ value: format, label: format.replace(/_/g, " ") })),
+          ],
+        })}
+        ${selectControl({
+          id: "genre",
+          label: "Genre",
+          value: state.genre,
+          options: [
+            { value: "all", label: "All genres" },
+            ...genres.map((genre) => ({ value: genre, label: genre })),
+          ],
+        })}
+        ${selectControl({
+          id: "progress",
+          label: "Progress",
+          value: state.progress,
+          options: [
+            { value: "all", label: "Any progress" },
+            { value: "unstarted", label: "Unstarted" },
+            { value: "started", label: "In progress" },
+            { value: "complete", label: "Complete" },
+            { value: "behind", label: "Behind" },
+          ],
+        })}
+      </div>
+    </div>
+    <div class="library-tools__row library-tools__row--sub">
+      <button class="ghost-toggle${state.group ? " is-active" : ""}" data-action="wl-group"
+        aria-pressed="${state.group}">${icon("layers")}<span>Group by status</span></button>
+      <p class="library-tools__count" role="status"></p>
+    </div>
+  </div>`;
+}
+
+function matchesProgress(item) {
+  const percent = progressPercent(item);
+  switch (state.progress) {
+    case "unstarted":
+      return (item.watched || 0) === 0;
+    case "started":
+      return (item.watched || 0) > 0 && percent !== 100;
+    case "complete":
+      return percent === 100;
+    case "behind":
+      return (episodesBehind(item) || 0) > 0;
+    default:
+      return true;
+  }
+}
+
+function applyFilters(items) {
+  return items.filter((item) => {
+    if (state.status !== "all" && item.listStatus !== state.status) return false;
+    if (state.format !== "all" && item.format !== state.format) return false;
+    if (state.genre !== "all" && !(item.genres || []).includes(state.genre)) return false;
+    return matchesProgress(item);
+  });
+}
+
+function cardGrid(items, prefs, { manual = false } = {}) {
+  return `<div class="card-grid card-grid--library stagger-in">${items
+    .map((item, index) =>
+      watchlistCard(item, prefs).replace("<article class=\"card ", `<article data-index="${index}" class="card `)
+    )
+    .join("")}</div>`;
+}
+
+/** Up/down controls that make manual order usable without dragging. */
+function manualBar(items) {
+  return `<div class="manual-bar" role="group" aria-label="Manual order controls">
+    ${items
+      .map(
+        (item, index) => `<div class="manual-bar__item">
+          <span class="manual-bar__pos">${String(index + 1).padStart(2, "0")}</span>
+          <span class="manual-bar__title">${esc(
+            item.title?.english || item.title?.romaji || item.title?.native || "Untitled"
+          )}</span>
+          <button class="step-btn" data-action="move" data-id="${item.id}" data-delta="-1"
+            aria-label="Move ${esc(titleKey(item))} up" ${index === 0 ? "disabled" : ""}>${icon("chevron-up")}</button>
+          <button class="step-btn" data-action="move" data-id="${item.id}" data-delta="1"
+            aria-label="Move ${esc(titleKey(item))} down" ${index === items.length - 1 ? "disabled" : ""}>${icon("chevron-down")}</button>
+        </div>`
+      )
+      .join("")}
+  </div>`;
+}
+
+/* ------------------------------------------------------------ */
 
 export function render(ctx) {
   const app = document.getElementById("app");
   const prefs = ctx.prefs();
-  const storedProblem = watchlist.storageProblem();
-
-  // Everything, newest first.
-  const all = watchlist.all().slice().sort((a, b) => b.createdAt - a.createdAt);
+  const problem = watchlist.storageProblem();
+  const all = watchlist.all().slice();
 
   const head = sectionHead({
     eyebrow: "Your library",
     title: "Watchlist",
     meta: all.length
-      ? `${all.length} title${all.length === 1 ? "" : "s"} · saved locally in this browser`
+      ? `${all.length} title${all.length === 1 ? "" : "s"} · stored in this browser only`
       : "",
     aside: "",
   });
 
   if (watchlist.isCorrupt()) {
-    app.innerHTML = `${head}${notice(storedProblem, "danger")}
+    app.innerHTML = `${head}${notice(problem, "danger")}
       <div class="${ctx.animate ? "view-enter" : ""}">
         ${emptyState({
           icon: "bell",
           title: "Saved data needs attention",
-          text: "Your existing file was left untouched. You can import a backup from Settings.",
+          text: "Your existing data was left untouched. You can restore a backup from Settings.",
           action: `<button class="btn btn--secondary" data-action="open-settings">Open settings</button>`,
         })}
       </div>`;
@@ -56,7 +236,7 @@ export function render(ctx) {
   }
 
   if (!all.length) {
-    app.innerHTML = `${head}${storedProblem ? notice(storedProblem, "warning") : ""}
+    app.innerHTML = `${head}${problem ? notice(problem, "warning") : ""}
       <div class="${ctx.animate ? "view-enter" : ""}">
         ${emptyState({
           icon: "sparkle",
@@ -68,24 +248,53 @@ export function render(ctx) {
     return;
   }
 
-  const cards = all
-    .map(
-      (item, index) =>
-        watchlistCard(item, prefs).replace(
-          "<article class=",
-          `<article style="--stagger:${Math.min(index, 10)}" class=`
-        )
-    )
-    .join("");
+  const filtered = applyFilters(all);
+  const sorted = filtered.slice().sort(SORTS[state.sort]?.compare || SORTS.added.compare);
+  const manual = state.sort === "manual";
+
+  let body;
+  if (!filtered.length) {
+    body = emptyState({
+      icon: "search",
+      title: "No titles match these filters",
+      text: "Loosen a filter to see more of your library.",
+      action: `<button class="btn btn--secondary" data-action="wl-reset">Clear filters</button>`,
+    });
+  } else if (state.group) {
+    body = LIST_STATUSES.map((status) => {
+      const group = sorted.filter((item) => item.listStatus === status);
+      if (!group.length) return "";
+      return `<section class="library-group" aria-labelledby="group-${status}">
+        <header class="library-group__head">
+          <h2 id="group-${status}">${esc(LIST_STATUS_LABELS[status])}</h2>
+          <span>${group.length}</span>
+        </header>
+        ${cardGrid(group, prefs)}
+      </section>`;
+    }).join("");
+    const unset = sorted.filter((item) => !item.listStatus);
+    if (unset.length) {
+      body += `<section class="library-group" aria-labelledby="group-none">
+        <header class="library-group__head"><h2 id="group-none">No status</h2><span>${unset.length}</span></header>
+        ${cardGrid(unset, prefs)}
+      </section>`;
+    }
+  } else {
+    body = `${manual ? manualBar(sorted) : ""}${cardGrid(sorted, prefs, { manual })}`;
+  }
 
   app.innerHTML = `
     <div class="${ctx.animate ? "view-enter" : ""}">
       ${head}
-      ${storedProblem ? notice(storedProblem, "warning") : ""}
+      ${problem ? notice(problem, "warning") : ""}
       ${statsBlock(all)}
-      <div class="card-grid${ctx.animate ? " stagger-in" : ""}">${cards}</div>
+      ${toolbar(all)}
+      <p class="library-count">Showing <strong>${filtered.length}</strong> of ${all.length}</p>
+      ${body}
     </div>`;
 }
+
+/* ------------------------------------------------------------ */
 
 export function handleAction(name, el, ctx) {
   if (name === "go-upcoming") {
@@ -96,5 +305,43 @@ export function handleAction(name, el, ctx) {
     ctx.openSettings?.();
     return true;
   }
+  if (name === "wl-status") {
+    const value = el.dataset.value;
+    state.status = state.status === value && value !== "all" ? "all" : value;
+    ctx.render();
+    return true;
+  }
+  if (name === "wl-group") {
+    state.group = !state.group;
+    ctx.render();
+    return true;
+  }
+  if (name === "wl-reset") {
+    state.status = "all";
+    state.format = "all";
+    state.genre = "all";
+    state.progress = "all";
+    ctx.render();
+    return true;
+  }
+  if (name === "move") {
+    watchlist.move(Number(el.dataset.id), Number(el.dataset.delta));
+    ctx.render();
+    return true;
+  }
   return false;
+}
+
+/** Select and input filters inside the section. */
+export function handleChange(event, ctx) {
+  const field = event.target.closest("[data-filter]");
+  if (!field) return false;
+  const key = field.dataset.filter;
+  if (key === "sort") state.sort = field.value;
+  else if (key === "format") state.format = field.value;
+  else if (key === "genre") state.genre = field.value;
+  else if (key === "progress") state.progress = field.value;
+  else return false;
+  ctx.render();
+  return true;
 }

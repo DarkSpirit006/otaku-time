@@ -1,0 +1,341 @@
+/* ============================================================
+   Otaku Time — weekly calendar
+
+   Seven ruled columns, one per day. Each slot is a time + a
+   poster chip + a title: closer to a printed radio schedule
+   than a dashboard grid. No absolute positioning, so it reflows
+   honestly at every width.
+   ============================================================ */
+
+.cal-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3) 0 var(--sp-4);
+  border-bottom: var(--hair) solid var(--border);
+  flex-wrap: wrap;
+}
+
+.cal-nav__label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-right: auto;
+  min-width: 0;
+}
+
+.cal-nav__range {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-lg);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.cal-nav__tz {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.cal-nav .btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.cal-filters {
+  padding: var(--sp-3) 0;
+  border-bottom: var(--hair) solid var(--border-faint);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.cal-filters::-webkit-scrollbar { display: none; }
+
+.cal {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0;
+  border-left: var(--hair) solid var(--border-faint);
+  margin-top: var(--sp-1);
+}
+
+.cal-day {
+  border-right: var(--hair) solid var(--border-faint);
+  min-width: 0;
+  padding: 0 var(--sp-2) var(--sp-4);
+}
+
+.cal-day.is-today {
+  background: linear-gradient(180deg, var(--accent-soft), transparent 42%);
+}
+
+.cal-day__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-1);
+  padding: var(--sp-3) 0 var(--sp-2);
+  border-bottom: var(--hair) solid var(--border);
+  margin-bottom: var(--sp-2);
+  position: sticky;
+  top: 0;
+  background: var(--paper);
+  z-index: 1;
+}
+
+.cal-day.is-today .cal-day__head {
+  border-bottom-color: var(--accent-text);
+}
+
+.cal-day__name {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.cal-day__num {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-lg);
+  line-height: 1;
+  margin-left: auto;
+}
+
+.cal-day.is-today .cal-day__num { color: var(--accent-text); }
+
+.cal-day__count {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--text-faint);
+  border: 1px solid var(--border-faint);
+  padding: 0 3px;
+}
+
+.cal-day__slots {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.cal-day__empty {
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: var(--sp-2) 0;
+}
+
+.cal-slot {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "time poster"
+    "title poster"
+    "meta poster";
+  gap: 0 var(--sp-1-5);
+  align-items: start;
+  padding: var(--sp-1-5) 0;
+  border: none;
+  border-bottom: var(--hair) solid var(--border-faint);
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.cal-slot:hover,
+.cal-slot:focus-visible {
+  background: var(--surface-2);
+}
+
+.cal-slot__time {
+  grid-area: time;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--tint, var(--accent));
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.cal-slot__poster {
+  grid-area: poster;
+  width: 34px;
+  height: 48px;
+  object-fit: cover;
+  background: var(--surface-3);
+  border-left: 2px solid var(--tint, var(--border));
+}
+
+.cal-slot__poster--empty {
+  display: block;
+}
+
+.cal-slot__body { display: contents; }
+
+.cal-slot__title {
+  grid-area: title;
+  font-size: var(--text-xs);
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.cal-slot__meta {
+  grid-area: meta;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--text-faint);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.cal-slot__saved {
+  width: 10px;
+  height: 10px;
+  color: var(--accent-text);
+}
+
+/* Current-time marker inside today's column */
+.cal-now {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  margin: var(--sp-1) 0;
+}
+
+.cal-now::before {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--accent);
+}
+
+.cal-now span {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-text);
+  order: -1;
+}
+
+.cal-now--end {
+  opacity: 0.55;
+  margin-top: var(--sp-2);
+}
+
+/* The gutter marker is a calendar annotation: on the agenda it reads as
+   a closing rule, so give it room before the next day begins. */
+.cal-day.is-today .cal-now--end { margin-bottom: var(--sp-3); }
+
+@media (max-width: 960px) {
+  .cal {
+    grid-template-columns: 1fr;
+    border-left: none;
+  }
+
+  .cal-day {
+    border-right: none;
+    border-top: var(--hair) solid var(--border);
+    padding: 0 0 var(--sp-3);
+  }
+
+  .cal-day.is-today {
+    background: none;
+  }
+
+  .cal-day__head {
+    position: static;
+    padding: var(--sp-2) 0;
+  }
+
+  .cal-day__slots {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--sp-1-5) var(--sp-4);
+  }
+
+  /* Agenda slot: the time gets its own line so a 12-hour string can
+     never run into the title; the thumbnail sits on the right. */
+  .cal-slot {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "time poster"
+      "title poster"
+      "meta poster";
+    align-items: start;
+    row-gap: 2px;
+    column-gap: var(--sp-3);
+    padding: var(--sp-2);
+    border-bottom: none;
+    border-left: 2px solid var(--tint, var(--border));
+  }
+
+  .cal-slot__time {
+    font-size: var(--text-2xs);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .cal-slot__poster { grid-area: poster; }
+
+  .cal-slot__title { -webkit-line-clamp: 2; }
+
+  .cal-now span { order: 0; }
+}
+
+@media (max-width: 520px) {
+  .cal-day__slots {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Agenda (phone): empty days fold away ----------
+   A week with four empty days should not cost four screens of
+   scrolling. Empty days stay in the grid on wide screens; on the
+   agenda they collapse to a compact rule with their day number,
+   so the week's shape is still visible at a glance. */
+@media (max-width: 960px) {
+  .cal-day.is-empty {
+    padding-bottom: var(--sp-2);
+  }
+
+  .cal-day.is-empty .cal-day__head {
+    padding: var(--sp-1-5) 0;
+    align-items: center;
+    gap: var(--sp-2);
+  }
+
+  .cal-day.is-empty .cal-day__name {
+    font-size: var(--text-2xs);
+    color: var(--text-faint);
+  }
+
+  .cal-day.is-empty .cal-day__num {
+    font-size: 0.85rem;
+    color: var(--text-faint);
+  }
+
+  /* Fold the empty placeholder, not the container: today's "now" rule
+     lives inside it and must survive a day with no airings. */
+  .cal-day.is-empty .cal-day__empty {
+    display: none;
+  }
+
+  .cal-day.is-empty .cal-day__slots {
+    padding: 0;
+  }
+
+  .cal-day.is-empty .cal-now--end {
+    margin: 0;
+  }
+}

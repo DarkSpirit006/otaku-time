@@ -91,7 +91,7 @@ test("export produces a versioned payload and filename-safe shape", () => {
   list.setProgress(MEDIA, 4);
   const payload = list.exportData();
   assert.equal(payload.app, "Otaku Time");
-  assert.equal(payload.schemaVersion, 2);
+  assert.equal(payload.schemaVersion, 3);
   assert.ok(Array.isArray(payload.items));
   assert.equal(payload.items[0].watched, 4);
   assert.ok(!Number.isNaN(Date.parse(payload.exportedAt)));

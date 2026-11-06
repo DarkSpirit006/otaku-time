@@ -22,11 +22,11 @@
   padding: 0 5px;
   background: var(--accent);
   color: var(--accent-ink);
-  font-size: 0.66rem;
+  font-size: 0.74rem;
 }
 
 .search-term {
-  color: var(--accent);
+  color: var(--accent-text);
   text-transform: none;
   letter-spacing: 0.02em;
 }
@@ -35,7 +35,7 @@
   width: 11px;
   height: 11px;
   border: 1.5px solid var(--border-strong);
-  border-top-color: var(--accent);
+  border-top-color: var(--accent-text);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }

@@ -63,3 +63,46 @@ function iconSvg(name) {
   const body = paths[name] || paths.sparkle;
   return `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">${body}</svg>`;
 }
+
+/** Skeleton rows that mirror the timeline layout. */
+export function skeletonRows(count = 5) {
+  const rows = Array.from(
+    { length: count },
+    () => `<div class="skeleton-row" aria-hidden="true">
+        <div class="skeleton-shimmer skeleton-row__poster"></div>
+        <div class="skeleton-row__body">
+          <div class="skeleton-shimmer skeleton-card__line"></div>
+          <div class="skeleton-shimmer skeleton-card__line skeleton-card__line--short"></div>
+        </div>
+      </div>`
+  ).join("");
+  return `<div class="skeleton-rows">${rows}</div>`;
+}
+
+/** Skeleton that matches the weekly calendar grid. */
+export function skeletonCalendar() {
+  const columns = Array.from(
+    { length: 7 },
+    () => `<div class="skeleton-cal__col" aria-hidden="true">
+        <div class="skeleton-shimmer skeleton-cal__head"></div>
+        <div class="skeleton-shimmer skeleton-cal__slot"></div>
+        <div class="skeleton-shimmer skeleton-cal__slot"></div>
+        <div class="skeleton-shimmer skeleton-cal__slot"></div>
+      </div>`
+  ).join("");
+  return `<div class="skeleton-cal">${columns}</div>`;
+}
+
+/**
+ * A row of toggle chips.
+ * @param {{name:string, label:string, active?:boolean, value?:string}[]} items
+ */
+export function chips(items, { label = "", action = "chip" } = {}) {
+  return `<div class="chips" role="group" aria-label="${esc(label)}">${items
+    .map(
+      (item) => `<button class="chip${item.active ? " is-active" : ""}" data-action="${action}"
+        data-chip="${esc(item.name)}" data-value="${esc(item.value ?? item.name)}"
+        aria-pressed="${item.active ? "true" : "false"}">${esc(item.label)}</button>`
+    )
+    .join("")}</div>`;
+}

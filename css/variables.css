@@ -116,7 +116,7 @@
 
   --text: #f4f1e9;
   --text-dim: rgba(244, 241, 233, 0.66);
-  --text-faint: rgba(244, 241, 233, 0.42);
+  --text-faint: rgba(244, 241, 233, 0.58);
   --text-invert: #0a0a0c;
 
   --border: rgba(244, 241, 233, 0.14);
@@ -124,8 +124,13 @@
   --border-faint: rgba(244, 241, 233, 0.08);
 
   --accent: #ff3b1f;
+  /* Text-tier accent/gold: same hue, tuned so small labels clear 4.5:1
+     on the tinted chips they sit on. Borders keep the vivid token. */
+  --accent-text: #ff3b1f;
+  --gold-text: #ffb020;
   --accent-hover: #ff5b43;
-  --accent-ink: #ffffff;
+  /* Dark ink on the solid accent: 5.5:1. White would only reach 3.5:1. */
+  --accent-ink: #0b0b0d;
   --accent-soft: rgba(255, 59, 31, 0.14);
 
   --gold: #ffb020;
@@ -158,15 +163,17 @@
 
   --text: #14110c;
   --text-dim: rgba(20, 17, 12, 0.66);
-  --text-faint: rgba(20, 17, 12, 0.44);
+  --text-faint: rgba(20, 17, 12, 0.63);
   --text-invert: #fffdf8;
 
   --border: rgba(20, 17, 12, 0.16);
   --border-strong: rgba(20, 17, 12, 0.34);
   --border-faint: rgba(20, 17, 12, 0.08);
 
-  --accent: #e02d0c;
-  --accent-hover: #b92307;
+  --accent: #c42609;
+  --accent-text: #a51f06;
+  --gold-text: #7d4d00;
+  --accent-hover: #a81f06;
   --accent-ink: #fffdf8;
   --accent-soft: rgba(224, 45, 12, 0.1);
 
