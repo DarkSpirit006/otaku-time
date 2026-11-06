@@ -1238,7 +1238,22 @@ function notifyCheck() {
    Init
    ------------------------------------------------------------ */
 
+/**
+ * Prototype switch for the phone feature layout.
+ * `?spotlight=text` renders the next-episode block text-first, with the
+ * artwork as a strip underneath instead of a poster on top. It exists so
+ * the two compositions can be measured and compared; the winner becomes
+ * the default and this comes out.
+ */
+function applyLayoutFlags() {
+  const requested = new URLSearchParams(location.search).get("spotlight");
+  if (requested === "text" || requested === "poster") {
+    document.documentElement.dataset.spotlight = requested;
+  }
+}
+
 async function init() {
+  applyLayoutFlags();
   initTheme();
   initToast();
   ctx = makeContext(false);

@@ -292,6 +292,54 @@ test.describe("artwork sources", () => {
   });
 });
 
+/* ============================================================
+   Layout prototype flag. `?spotlight=text` reorders the phone feature
+   (headline first, artwork as a strip). Whatever variant wins, the
+   switch must stay inert unless it is explicitly asked for, and both
+   orders must keep the same content and the same DOM order for
+   assistive tech.
+   ============================================================ */
+test.describe("spotlight layout flag", () => {
+  test("only reorders the phone layout when asked", async ({ page }) => {
+    const events = defaultEvents();
+    await mockAniList(page, standardSchedules(events));
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+    await expect(page.locator(".spotlight__title")).toBeVisible();
+
+    const measure = () =>
+      page.evaluate(() => {
+        const title = document.querySelector(".spotlight__title").getBoundingClientRect();
+        const media = document.querySelector(".spotlight__media").getBoundingClientRect();
+        return {
+          flag: document.documentElement.dataset.spotlight || "",
+          titleFirst: title.top < media.top,
+          sameTitle: document.querySelector(".spotlight__title").textContent.trim(),
+        };
+      });
+
+    const fallback = await measure();
+    expect(fallback.flag).toBe("");
+    expect(fallback.titleFirst).toBe(false);
+
+    await page.goto("/?spotlight=text");
+    await expect(page.locator(".spotlight__title")).toBeVisible();
+    const variant = await measure();
+    expect(variant.flag).toBe("text");
+    expect(variant.titleFirst).toBe(true);
+    // The content is identical; only the composition changed.
+    expect(variant.sameTitle).toBe(fallback.sameTitle);
+
+    // Reading order for assistive tech never changes — CSS order only.
+    const domOrder = await page.evaluate(() =>
+      [...document.querySelector(".spotlight").children].map((el) => el.className)
+    );
+    expect(domOrder[0]).toContain("spotlight__content");
+    expect(domOrder[1]).toContain("spotlight__media");
+  });
+});
+
 test.describe("boot & sections", () => {
   test("loads with branding, upcoming schedule and no page errors", async ({ page }) => {
     const errors = collectPageErrors(page);

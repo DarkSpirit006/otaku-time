@@ -46,8 +46,9 @@ Otaku Time is designed like a printed broadcast almanac rather than a dashboard:
 ```bash
 git clone https://github.com/DarkSpirit006/otaku-time.git
 cd otaku-time
-npm ci            # dev-only: Playwright and axe-core
-npm run serve     # http://localhost:8080
+npm ci                      # dev-only: Playwright and axe-core
+npx playwright install      # only needed to run the e2e suite
+npm run serve               # http://localhost:8080
 ```
 
 Any static file server works — there is nothing to build:
@@ -83,7 +84,9 @@ Every fixed bug landed with a regression test that failed first. Two examples wo
 
 Measured with Lighthouse against a local static server, mobile profile, three runs: **88 / 88 / 88 performance, 100 accessibility, 100 best practices, 100 SEO**, FCP 2.3 s, LCP 3.5 s, TBT 60–100 ms, CLS 0.
 
-The remaining gap to 98 is **not** app scripting — total blocking time is under 100 ms. The LCP element is the feature's poster, served from AniList's CDN (`s4.anilist.co`): roughly 2.3–2.5 s of the 3.5 s is resource-load delay for third-party artwork that this app cannot compress, subset, or self-host. Number five on the list was already removed by shipping the artwork as the page structure rather than a background.
+The remaining gap to 98 is **not** app scripting — total blocking time is under 100 ms. The LCP element is the feature's poster, served from AniList's CDN (`s4.anilist.co`): roughly 2.3–2.5 s of the 3.5 s is resource-load delay for third-party artwork that this app cannot compress, subset, or self-host.
+
+I tested the obvious alternative rather than dismissing it: `?spotlight=text` puts the headline first and demotes the artwork to a strip under it (same content, CSS `order` only). Over five cold-cache runs the median LCP went from 3092 ms to 2992 ms — 100 ms, 3% — because FCP itself is 2.2–2.3 s of app shell, not artwork. Reaching 98 would mean deleting the art. Poster-first stays the default — that is a decision, recorded rather than left hanging — and the flag remains a documented, tested option for slow connections. Full method, numbers and screenshots: [`docs/experiments/spotlight-layout.md`](docs/experiments/spotlight-layout.md).
 
 ## Project structure
 
@@ -121,7 +124,11 @@ Evergreen browsers with ES modules, `<dialog>`, IntersectionObserver and Indexed
 
 ## License
 
-No license file has been published for this repository yet. **All rights reserved by the author until a license is chosen.** If you intend to fork, redistribute, or contribute commercially, open an issue to settle licensing first; the options are being weighed now.
+[**PolyForm Noncommercial 1.0.0**](LICENSE) — Copyright 2026 DarkSpirit006 (Otaku Time).
+
+You may use, modify and share Otaku Time for **any noncommercial purpose**: personal use, study, teaching, research, hobby projects, noncommercial open-source forks. You must keep the license text and the `Required Notice` line with any copy you pass on.
+
+**Commercial use is not licensed.** If you want to use it at a company, in a paid product, or in anything that earns revenue, open an issue and we can agree terms separately. This is a source-available license, not an OSI-defined open-source one — that is deliberate, and it is worth reading the [full text](LICENSE) rather than assuming MIT-style terms.
 
 ---
 

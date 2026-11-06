@@ -1,6 +1,6 @@
 # Otaku Time — final report
 
-Repository: `DarkSpirit006/otaku-time` · HEAD `850c711` · working tree clean
+Repository: `DarkSpirit006/otaku-time` · HEAD `6119b4e` · working tree clean
 Report written: 2026-11-06
 
 ---
@@ -49,7 +49,7 @@ Everything below was executed, not assumed.
 | Check | Result |
 | --- | --- |
 | Unit tests (`npm test`, `node:test`) | **178 / 178 passing** (the original 83 plus new suites for migrations, import/undo/cache, search ranking, schedule state machine, notifications, DST and midnight edges) |
-| Playwright (`npx playwright test`) | **123 / 123 passing** — 27 app, 16 edge-case, 41 axe, 32 visual, 6 offline, plus regression specs |
+| Playwright (`npx playwright test`) | **124 / 124 passing** — 29 app, 16 edge-case, 41 axe, 32 visual, 6 offline, plus regression specs |
 | axe-core, every primary view and dialog, dark + light, 3 widths, zero serious/critical | **41 / 41 passing** |
 | Visual regression, 3 sections × dark/light × 360/768/1440 + detail + search | **32 / 32**, baselines reviewed by eye; verified stable over **four consecutive runs** |
 | Offline suite against the real service worker | **6 / 6** (cold start offline, manifest + icons, deep link after reload, unknown id, corrupt route, offline bar) |
@@ -57,6 +57,7 @@ Everything below was executed, not assumed.
 | Lighthouse, mobile (earlier quieter machine state, same build family) | **85 / 85 / 84** with TBT 90 / 70 / 100 ms |
 | Artwork transfer, measured per device profile | desktop 1× **893 KiB** (was 2014), phone 2× **661 KiB** (was 3089), phone 3× 1270 KiB |
 | axe contrast in the light theme | accent text `#a51f06` and gold `#7d4d00`, 5.5:1 and ~6.1:1 on their tinted chips |
+| A/B of the phone feature layout, 5 cold-cache runs each | poster-first median LCP **3092 ms**, text-first **2992 ms** (see §6 and `docs/experiments/`) |
 
 **Bugs found and fixed in this pass, each with a regression test that failed first:**
 
@@ -158,32 +159,47 @@ none was added for the build, the design or the tests.
 
 ---
 
-## 6. Remaining decisions
+## 6. Decisions and open items
 
-**License — needs your call.** The repository ships no license file, and I will not
-pick one for you. The README currently states "all rights reserved until a license
-is chosen", which is accurate but blocks anyone from legally forking or contributing.
+Both decisions this report was waiting on are now made; what remains open needs
+credentials or hardware, not judgement.
 
-| Option | What it means | Trade-off |
-| --- | --- | --- |
-| **MIT** | Anyone may use, modify, redistribute, with attribution and no warranty. | Maximum adoption; someone could host a closed paid fork. |
-| **AGPL-3.0** | Anyone may use and modify, but network-hosted derivatives must publish their source. | Strongest copyleft for a web app; some companies refuse to touch it. |
-| **PolyForm Noncommercial** | Free for personal/non-commercial use, commercial use needs a separate agreement. | Protects against commercial resale; not an OSI license, so it isn't "open source" by that definition. |
-| **Leave it proprietary** | Current state; source visible, no rights granted. | Contradicts the spirit of publishing the code and README docs. |
+### Decided
 
-My recommendation is **MIT** if you want this shared and contributed to, **AGPL-3.0**
-if you'd rather nobody turns it into a closed hosted product.
+**License — PolyForm Noncommercial 1.0.0.** Shipped as `LICENSE`, with
+the `Required Notice` line the license mandates, a README section that says plainly
+what is and is not permitted, and `package.json` pointing at the file rather than
+guessing an SPDX id (there is no OSI SPDX identifier for this license).
 
-**Other open items, none blocking:**
+Practical consequences worth keeping in mind: anyone may use, modify and share
+Otaku Time for noncommercial purposes, including forks and noncommercial
+open-source distributions; anyone passing a copy on must include the license text
+and the notice line; commercial use requires separate terms. It is source-available,
+not OSI open source — a distinction stated in the README so nobody assumes
+MIT-style rights.
+
+### Still open, none blocking
 
 1. **Mobile performance against the ≥ 98 target is not met** — measured 79–85. The
    honest cause: TBT is 70–290 ms (i.e. not the bottleneck), CLS is 0, and 2.3–2.5 s
    of the 3.5–4.0 s LCP is *resource load delay* for the feature poster on AniList's
    CDN, third-party bytes this app cannot compress, subset or self-host. I reduced
-   the downloadable artwork substantially (see §2) without moving this ceiling,
-   because the LCP element genuinely needs its largest tier at 2.6× DPR. Hitting 98
-   would require not showing the poster above the fold — a design decision I am not
-   willing to make silently.
+   the downloadable artwork substantially (see §2) without moving this ceiling.
+
+   **The alternative was built and measured, not argued about.** `?spotlight=text`
+   reorders the phone feature text-first with the artwork as a strip underneath —
+   same content, same DOM order, CSS `order` only. Over five cold-cache runs at 4×
+   CPU throttle and 1.6 Mbps / 150 ms RTT, median LCP moved from **3092 ms to
+   2992 ms**: 100 ms, or 3%, and the best Lighthouse run reached 80 performance with
+   LCP 3.4 s. FCP is 2.2–2.3 s and is app shell, not artwork, so removing every
+   image still leaves the score in the low-to-mid 80s. Reaching 98 means deleting the
+   art — the thing the brief asked for. Full method, both screenshots and the
+   numbers are in [`docs/experiments/spotlight-layout.md`](docs/experiments/spotlight-layout.md).
+   **Decided: option 1 — ship variant A (poster-first) and document the ceiling.**
+   The flag stays as a tested, supported escape hatch and the hook a future "data
+   saver" setting would use. The decision, the options weighed and their costs are
+   recorded in `docs/experiments/spotlight-layout.md`; switching the default later
+   remains a one-line change plus regenerated baselines.
 2. **Deploy verification** — pushing and watching the Pages run is the last unchecked
    step, and needs your credentials.
 3. **Reminders when the app is closed** remain impossible in a static, account-less

@@ -224,6 +224,50 @@
     max-width: 22ch;
   }
 
+  /* ---------- Prototype: text-first feature (?spotlight=text) ----------
+     The phone feature leads with the headline and follows with the
+     artwork as a full-bleed strip. Same content, opposite emphasis: the
+     poster stops being the thing that has to load before the page can
+     score. */
+  :root[data-spotlight="text"] .spotlight__content {
+    order: 1;
+    margin-top: 0;
+    padding: var(--sp-5) 0 0;
+  }
+
+  :root[data-spotlight="text"] .spotlight__media {
+    order: 2;
+    height: auto;
+    aspect-ratio: 21 / 9;
+    margin: var(--sp-5) calc(var(--sp-4) * -1) 0;
+  }
+
+  :root[data-spotlight="text"] .spotlight__poster {
+    border-left: 0;
+    border-top: var(--hair) solid var(--border);
+    border-bottom: 0;
+  }
+
+  :root[data-spotlight="text"] .spotlight__poster img {
+    object-position: center 22%;
+  }
+
+  /* No content sits on the artwork in this variant, so the scrim only
+     has to soften the strip's leading edge into the page. */
+  :root[data-spotlight="text"] .spotlight .spotlight__poster::after {
+    background: linear-gradient(
+      180deg,
+      var(--paper) 0%,
+      color-mix(in srgb, var(--paper) 55%, transparent) 12%,
+      transparent 34%
+    );
+  }
+
+  :root[data-spotlight="text"] .spotlight__countdown {
+    border-top: var(--hair) solid var(--border);
+    padding-top: var(--sp-4);
+  }
+
   .spotlight__countdown {
     border-top: 0;
     padding-top: 0;
