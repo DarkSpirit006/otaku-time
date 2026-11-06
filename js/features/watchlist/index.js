@@ -215,7 +215,8 @@ export function render(ctx) {
 
   const head = sectionHead({
     eyebrow: "Your library",
-    title: "Watchlist",
+    title: "Watch",
+    tail: "list",
     meta: all.length
       ? `${all.length} title${all.length === 1 ? "" : "s"} · stored in this browser only`
       : "",

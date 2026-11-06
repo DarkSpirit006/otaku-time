@@ -33,6 +33,7 @@ import { initPwa } from "./services/pwa.js";
 
 import { enhanceSelects, observeSelects } from "./components/select.js";
 import { showToast, initToast } from "./components/toast.js";
+import { renderWire, wireLines } from "./components/wire.js";
 import { initPalette, openPalette, closePalette, openHelp, closeHelp, isHelpOpen } from "./components/palette.js";
 import { offerUndo } from "./services/undo.js";
 
@@ -193,9 +194,13 @@ function render() {
   const key = renderKey();
   if (key === lastRenderKey) {
     updateSyncStatus();
+    updateWire();
     return;
   }
   lastRenderKey = key;
+  // render() only runs when the data signature moved, so this is a
+  // genuine content change — never skip it on the minute check.
+  updateWire({ force: true });
 
   const animate = animateNext;
   ctx = makeContext(animate);
@@ -424,6 +429,39 @@ function updateSyncStatus() {
       : "";
     if (value.includes("synced")) meta.dataset.synced = value;
   }
+}
+
+/* ------------------------------------------------------------
+   Broadcast wire
+   ------------------------------------------------------------ */
+
+let wireMinute = -1;
+
+/**
+ * Keep the wire in step with the loaded windows.
+ *
+ * Countdowns inside it are minute-scale, so this refreshes when the
+ * minute changes rather than on every clock tick — a strip that is
+ * rewritten once a second would fight its own animation.
+ */
+function updateWire({ force = false } = {}) {
+  const el = qs("#wire");
+  if (!el) return;
+  const minute = Math.floor(Date.now() / 60_000);
+  // Data changes must always redraw: the minute check exists only to
+  // stop the countdown text from re-rendering every tick.
+  if (!force && minute === wireMinute) return;
+  wireMinute = minute;
+
+  renderWire(
+    el,
+    wireLines({
+      upcoming: schedules.upcoming.events,
+      recent: schedules.recent.events,
+      now: Math.floor(Date.now() / 1000),
+      tracked: watchlist.all().length,
+    })
+  );
 }
 
 /* ------------------------------------------------------------

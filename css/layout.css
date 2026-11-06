@@ -688,3 +688,126 @@
 .tabbar[data-active="0"] .tabbar__indicator { transform: translateX(0%); }
 .tabbar[data-active="1"] .tabbar__indicator { transform: translateX(100%); }
 .tabbar[data-active="2"] .tabbar__indicator { transform: translateX(200%); }
+
+/* ------------------------------------------------------------
+   Broadcast wire
+   A single line of live schedule state, borrowed from the
+   newsroom ticker: what airs next, what just aired, and how much
+   of the window is loaded. Transform-only animation, paused on
+   hover/focus, and stopped entirely under reduced motion.
+   ------------------------------------------------------------ */
+
+.wire {
+  display: flex;
+  align-items: stretch;
+  min-height: 30px;
+  border-bottom: var(--hair) solid var(--border);
+  background: var(--surface-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  overflow: hidden;
+}
+
+.wire__label {
+  flex: none;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--sp-3);
+  border-right: var(--hair) solid var(--border);
+  background: var(--surface-3);
+  color: var(--accent-text);
+}
+
+.wire__viewport {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.wire__track {
+  display: inline-flex;
+  flex: none;
+  animation: wire-marquee 64s linear infinite;
+  will-change: transform;
+}
+
+.wire__pass {
+  display: inline-flex;
+  flex: none;
+  padding-left: var(--sp-4);
+}
+
+.wire__item {
+  flex: none;
+  padding-right: var(--sp-6);
+  white-space: nowrap;
+}
+
+.wire:hover .wire__track,
+.wire:focus-within .wire__track {
+  animation-play-state: paused;
+}
+
+@keyframes wire-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* Reduced motion: no travel at all. The lines become ordinary wrapped
+   prose, and the duplicated pass disappears. Block layout on purpose —
+   as a flex row the track kept every item on one line whatever wrapping
+   flags were set, and the tail of the wire was clipped and unreachable. */
+@media (prefers-reduced-motion: reduce) {
+  .wire {
+    overflow: visible;
+  }
+  .wire__viewport,
+  .wire__track {
+    display: block;
+    min-width: 0;
+    animation: none;
+  }
+  .wire__pass {
+    display: block;
+    padding: 5px var(--sp-3) 1px var(--sp-4);
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    line-height: 1.35;
+  }
+  .wire__item {
+    /* inline-block keeps each statement whole; inline let a title break
+       mid-phrase, which read as three unrelated sentences per line. */
+    display: inline-block;
+    white-space: normal;
+    padding-bottom: 3px;
+  }
+  .wire__item + .wire__item {
+    padding-left: var(--sp-3);
+  }
+  .wire__pass + .wire__pass {
+    display: none;
+  }
+}
+
+/* Split masthead: the second half steps back to an outline so the
+   headline reads as a printed title rather than a heading. The text
+   stays one element, so nothing changes for a screen reader, and the
+   outline is a duplicate of the word in the a11y tree only visually.
+   Solid fallback first: if text-stroke is unavailable the word is
+   simply lighter, never invisible. */
+.section-head__tail {
+  color: var(--text-faint);
+}
+
+@supports ((-webkit-text-stroke: 1px currentColor)) {
+  .section-head__tail {
+    color: transparent;
+    -webkit-text-stroke: 1.4px color-mix(in srgb, var(--text) 50%, transparent);
+    text-shadow: none;
+  }
+}

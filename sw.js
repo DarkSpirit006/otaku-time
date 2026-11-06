@@ -39,6 +39,7 @@ const SHELL = [
   "./js/components/select.js",
   "./js/components/states.js",
   "./js/components/toast.js",
+  "./js/components/wire.js",
   "./js/features/detail/facts.js",
   "./js/features/detail/index.js",
   "./js/features/recently-aired/index.js",

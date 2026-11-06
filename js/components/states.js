@@ -38,11 +38,16 @@ export function notice(text, kind = "danger") {
  * Section heading: eyebrow + h1 + meta on the left, optional
  * * aside (extra controls) on the right.
  */
-export function sectionHead({ eyebrow, title, meta = "", aside = "" }) {
+export function sectionHead({ eyebrow, title, meta = "", aside = "", tail = "" }) {
+  // `tail` is rendered as outlined type — a quiet second half of the
+  // masthead. It joins the title with no whitespace, so the heading's
+  // accessible name stays exactly the section name ("Upcoming") instead
+  // of becoming "Up coming"; a tail that starts a new word carries its
+  // own leading space.
   return `<header class="section-head">
     <div class="section-head__left">
       <p class="section-head__eyebrow">${esc(eyebrow)}</p>
-      <h1 id="section-title">${esc(title)}</h1>
+      <h1 id="section-title">${esc(title)}${tail ? `<span class="section-head__tail">${esc(tail)}</span>` : ""}</h1>
       <p class="section-head__meta" id="section-meta">${meta}</p>
     </div>
     ${aside ? `<div class="section-head__aside">${aside}</div>` : ""}

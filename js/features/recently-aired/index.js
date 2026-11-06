@@ -32,7 +32,8 @@ export function render(ctx) {
   });
   const head = sectionHead({
     eyebrow: "Schedule",
-    title: "Recently aired",
+    title: "Recently",
+    tail: " aired",
     meta: state.syncedAt
       ? `${summary.label} · Synced ${esc(timeAgo(state.syncedAt / 1000))}`
       : summary.label,

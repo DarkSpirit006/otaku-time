@@ -1,6 +1,7 @@
 # Otaku Time — final report
 
-Repository: `DarkSpirit006/otaku-time` · HEAD `2fb047f` (local) · working tree clean
+Repository: `DarkSpirit006/otaku-time` · working tree clean at the local checkpoint commit
+`Restore the audit work after an environment rollback (squashed)` — nothing was pushed
 Report written: 2026-11-06 · Audit brief: code quality, static analysis and reliability
 
 This pass did not redesign or reimplement anything. It audited the codebase against
@@ -44,8 +45,8 @@ extrapolated from a different build, or copied from a previous report without sa
 
 | Check | Result |
 | --- | --- |
-| Unit tests (`npm test`, `node:test`) | **205 / 205 passing** (was 178 before this pass) |
-| Playwright (`npx playwright test`) | **133 / 133 passing** (was 124) — 31 app, 16 edge-case, 41 axe, 32 visual, 8 offline, 5 pagination |
+| Unit tests (`npm test`, `node:test`) | **216 / 216 passing** (was 178 before this pass) |
+| Playwright (`npx playwright test`) | **143 / 143 passing** (was 124) — 31 app, 16 edge-case, 41 axe, 32 visual, 8 offline, 5 pagination, 10 wire/masthead |
 | axe-core: every primary view and dialog, dark + light, three widths | **41 / 41**, zero serious or critical violations |
 | Visual regression | **32 / 32**, and re-run twice more with identical results; all 32 baselines contain no `#FF00FF` artifacts (checked pixel by pixel) |
 | Asset + precache integrity (`npm run check:assets`) | **42 modules** reachable from the entry points, **70** precache entries, **14** stylesheets — all present, all precached |
@@ -133,9 +134,11 @@ All behaviour-neutral, and proved so rather than asserted:
   precise message; it also caught a real omission during this pass (the newly created
   `facts.js`) before the module was precached.
 - CI cost: ~150 ms, no browser, no network.
-- Five commits, each self-contained and green: `65b1aa6`, `9ee720b`, `5cf9ea8`,
-  `2fb047f`, plus the recovery checkpoint `17fa8b8`. No force-push, no history rewrite,
-  no user changes overwritten.
+- The work was committed as five self-contained, green commits. The sandbox then
+  reverted HEAD and dropped those commit objects while keeping every file; the tree was
+  re-verified (205 unit, 133 Playwright, asset check) and re-committed as one squashed
+  checkpoint whose message records the five original hashes and titles. Nothing was force-pushed, no history was rewritten, and no user change was
+  overwritten.
 
 ### 2.4 Performance
 
@@ -149,6 +152,21 @@ Lighthouse numbers on this sandbox are noisy (83 → 76 on the same build), so n
 here rests on one run.
 
 ---
+
+## 2.5 The reference build (`otaku-time-example`)
+
+A sibling implementation of the same product (React 19 + Vite + TypeScript + Tailwind) was reviewed on the user's instruction as a **design reference only** — not replaced, not merged. I cloned it, built it (`vite build`, 2505 modules, no errors) and ran it against the live AniList API to judge it from a running app rather than from source.
+
+What it has that this app does not: nothing load-bearing. No service worker, manifest, offline mode, installer, notifications, tests, CI, README or licence, and its fonts come from Google Fonts — three third-party requests that this app's CSP and no-tracker rule forbid. Its 479 kB single file (146 kB gzip) is larger than this app's 100 kB gzip of JS+CSS, and the fonts here are self-hosted and precached. Its 19 kB-tall phone upcoming view reproduces this app's known performance ceiling (everything loaded eagerly before pagination); the 414 px page width at a 390 px viewport is an accepted, un-reproduced measurement — the text slider overhangs by 24 px and I did not confirm the cause.
+
+What was worth taking, and was taken:
+
+- **The broadcast wire** — a ticker of what airs next, what just aired, and how much of the window is loaded. Derived from the loaded schedule only, so it refuses to overclaim: it says "schedule feed empty" rather than advertising, never calls something already aired "next", and states no episode total.
+- **The split masthead** — `UP` solid, `COMING` outlined, as one `h1`. The outline is paint, not content: the accessible name stays exactly "Upcoming".
+
+Three things I had to fix during the port, all caught by tests rather than by looking: a scrollable reduced-motion fallback that failed `scrollable-region-focusable` in all 41 axe scans; a wrapping fix that still left the tail clipped because a flex row would not wrap (found by measuring rendered geometry); and an outline at 38 % opacity that measured **2.42:1** against the light theme — now 50 %, measuring 4.83:1 on ink and 3.41:1 on paper.
+
+**A data hazard measured between the two apps.** Both write `otaku-time.watchlist.v1` with `version: 3` and incompatible shapes, and GitHub Pages puts both under one origin. Seeding a real watchlist and merely *loading* the example app rewrote the key from 556 bytes to `{"version":3,"entries":[]}` (a `.corrupt` backup is written, so it is recoverable, but nothing tells the user). This app is the safe side of the collision: it refuses to read their shape and leaves it untouched. If both are ever deployed under `darkspirit006.github.io`, one of them needs a different storage key.
 
 ## 3. Remaining — not done
 
@@ -181,6 +199,8 @@ reloads before asserting to reflect it.
 
 ### 3.2 Not performed
 
+- **The reference build's storage-key collision is not fixed.** It is their repository, and the fix belongs on whichever side deploys second; reported, not silently patched.
+- **One unattributed test failure.** In one of five full Playwright runs a single test failed; the output was not captured, and three consecutive runs afterwards were 143/143. It is recorded as a real, unexplained flake rather than smoothed over.
 - **Nothing was pushed.** No credentials in this environment: no `gh`, no token. The
   commits exist locally only, so the remote `main`, the deployed Pages site and
   CodeFactor all still describe the previous code. **An improved grade would not be

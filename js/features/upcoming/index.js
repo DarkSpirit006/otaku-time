@@ -312,7 +312,8 @@ export function render(ctx) {
 
   const head = sectionHead({
     eyebrow: "Schedule",
-    title: "Upcoming",
+    title: "Up",
+    tail: "coming",
     meta,
     aside: viewSwitch(),
   });
