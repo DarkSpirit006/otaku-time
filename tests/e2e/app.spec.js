@@ -937,3 +937,51 @@ test.describe("render discipline (no flashing)", () => {
     await expect(page.locator(".card, .lead-panel")).toHaveCount(3);
   });
 });
+
+test.describe("install prompt", () => {
+  test("no install offer appears when the browser has not offered one", async ({ page }) => {
+    await mockAniList(page, standardSchedules(defaultEvents()));
+    await page.goto("/");
+    await page.locator(".js-settings-open").first().click();
+    await expect(page.locator("#settings-dialog")).toBeVisible();
+
+    // Headless Chromium never fires beforeinstallprompt, so this is the
+    // real "no offer" state: the app must stay quiet about installing.
+    await expect(page.locator('[data-settings-action="install-app"]')).toHaveCount(0);
+    await expect(page.locator("#settings-dialog")).not.toContainText(/Add to this device/);
+  });
+
+  test("an offered install is surfaced in settings and reports its outcome", async ({ page }) => {
+    await mockAniList(page, standardSchedules(defaultEvents()));
+    await page.goto("/");
+    await page.locator(".card, .lead-panel").first().waitFor();
+
+    // The browser's install criteria cannot be met in a headless run, so the
+    // event is synthesised with the same shape Chromium uses. The module's
+    // handling of it is covered separately in tests/unit/pwa.test.js.
+    await page.evaluate(() => {
+      window.__installCalls = 0;
+      const event = new Event("beforeinstallprompt");
+      event.prompt = () => {
+        window.__installCalls += 1;
+      };
+      event.userChoice = Promise.resolve({ outcome: "accepted", platform: "web" });
+      window.dispatchEvent(event);
+    });
+
+    await page.locator(".js-settings-open").first().click();
+    const button = page.locator('[data-settings-action="install-app"]');
+    await expect(button).toBeVisible();
+    await expect(page.locator("#settings-dialog")).toContainText("Add to this device");
+
+    await button.click();
+    await expect(page.locator("#toast")).toContainText(/Installing Otaku Time/);
+    await expect(page.locator("#settings-dialog")).toBeHidden();
+    expect(await page.evaluate(() => window.__installCalls)).toBe(1);
+
+    // The offer is spent: reopening settings must not show it again.
+    await page.locator(".js-settings-open").first().click();
+    await expect(page.locator("#settings-dialog")).toBeVisible();
+    await expect(page.locator('[data-settings-action="install-app"]')).toHaveCount(0);
+  });
+});

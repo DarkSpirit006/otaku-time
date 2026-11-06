@@ -8,6 +8,7 @@ import { getSchedule, loadSchedule, needsLoad, attachSentinel, detachSentinel } 
 import { dayKey, dayLabel, isTodayOrTomorrow, timeAgo } from "../../utils/time.js";
 import { timelineRow, dayGroup } from "../../components/card.js";
 import { skeletonGrid, emptyState, notice, sectionHead } from "../../components/states.js";
+import { paginationSummary } from "../../utils/schedule-core.js";
 import { esc } from "../../utils/dom.js";
 
 export function render(ctx) {
@@ -22,13 +23,19 @@ export function render(ctx) {
     .filter((event) => event.airingAt <= horizon)
     .sort((a, b) => b.airingAt - a.airingAt);
 
-  const countLabel = `${events.length} episode${events.length === 1 ? "" : "s"}`;
+  // "8 episodes" reads as "there are eight", which is only true once the
+  // history window is exhausted. Until then this is a loaded count.
+  const summary = paginationSummary({
+    loaded: state.events.length,
+    more: state.more,
+    page: state.page,
+  });
   const head = sectionHead({
     eyebrow: "Schedule",
     title: "Recently aired",
     meta: state.syncedAt
-      ? `${countLabel} · Synced ${esc(timeAgo(state.syncedAt / 1000))}`
-      : countLabel,
+      ? `${summary.label} · Synced ${esc(timeAgo(state.syncedAt / 1000))}`
+      : summary.label,
     aside: "",
   });
 

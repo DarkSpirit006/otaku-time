@@ -299,15 +299,12 @@
 
   .row__poster {
     margin-left: 0;
+    grid-area: poster;
+    align-self: center;
   }
 
   .row--lede::before {
     left: -8px;
-  }
-
-  .row__poster {
-    grid-area: poster;
-    align-self: center;
   }
 
   .row__body {

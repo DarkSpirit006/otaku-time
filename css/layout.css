@@ -262,9 +262,6 @@
   /* Full-bleed children may paint past the canvas; clip without
      creating a scroll container (sticky topbar keeps working). */
   overflow-x: clip;
-}
-
-.main-column {
   /* Keep the footer at the bottom of the first viewport so it does not
      jump down when the schedule arrives (that shift is pure noise). */
   min-height: calc(100dvh - var(--topbar-h));
@@ -507,6 +504,9 @@
   border-left: 3px solid var(--accent);
   font-size: var(--text-sm);
   letter-spacing: -0.005em;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
   box-shadow: var(--shadow-lift);
   opacity: 0;
   transform: translateY(10px);
@@ -562,7 +562,6 @@
    v3 chrome: offline bar, toast action, nav numbers, segments
    ============================================================ */
 
-.nav__link.is-active::before { color: var(--accent-text); }
 
 .offline-bar {
   display: flex;
@@ -587,11 +586,6 @@
   flex: none;
 }
 
-.toast {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-}
 
 .toast__text { min-width: 0; }
 

@@ -156,7 +156,7 @@ test("weekdayOf is stable for a known date", () => {
 test("minutesIntoDay is timezone aware", () => {
   const instant = Date.UTC(2026, 10, 4, 15, 30);
   assert.equal(minutesIntoDay(instant, "UTC"), 15 * 60 + 30);
-  assert.equal(minutesIntoDay(instant, "Asia/Tokyo"), 0 * 60 + 30, "midnight in Tokyo");
+  assert.equal(minutesIntoDay(instant, "Asia/Tokyo"), 30, "00:30 in Tokyo");
   assert.equal(minutesIntoDay(instant, "Asia/Kolkata"), 21 * 60);
 });
 

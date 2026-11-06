@@ -447,10 +447,6 @@
     gap: var(--sp-2-5);
   }
 
-  .detail-title {
-    font-size: clamp(1.3rem, 1rem + 2.4vw, 1.8rem);
-  }
-
   .detail-synopsis {
     max-height: 132px;
   }

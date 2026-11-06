@@ -8,6 +8,10 @@
 
 let registration = null;
 let callbacks = {};
+// The browser hands out one beforeinstallprompt event per page load, and
+// only when the app is actually installable. Until it arrives there is no
+// install to offer, and claiming otherwise would be a lie to the user.
+let installEvent = null;
 let reloading = false;
 // A brand-new visitor gets a controller when the fresh worker calls
 // clients.claim(). That is not an update, and reloading for it would
@@ -17,6 +21,16 @@ let updateRequested = false;
 
 export function initPwa({ onUpdateReady, onControllerChange } = {}) {
   callbacks = { onUpdateReady, onControllerChange };
+
+  window.addEventListener("beforeinstallprompt", (event) => {
+    // Keep the browser's own mini-infobar out of the way: the offer lives
+    // in Settings, where the rest of the app's affordances are.
+    event.preventDefault();
+    installEvent = event;
+  });
+  window.addEventListener("appinstalled", () => {
+    installEvent = null;
+  });
 
   if (!("serviceWorker" in navigator) || location.protocol === "file:") return;
 
@@ -76,7 +90,30 @@ function announce() {
   });
 }
 
-/** Ask the browser to install the app (returns 'unavailable' when it cannot). */
-export function promptInstall() {
-  return "unavailable";
+/** Has this browser offered an install that is still unused? */
+export function canInstall() {
+  return Boolean(installEvent);
+}
+
+/**
+ * Ask the browser to install the app.
+ *
+ * Resolves to "accepted", "dismissed" or "unavailable". The captured
+ * event is single-use by spec, so it is dropped before prompting: a
+ * second call must not pretend an install is still on offer.
+ */
+export async function promptInstall() {
+  if (!installEvent) return "unavailable";
+
+  const event = installEvent;
+  installEvent = null;
+
+  try {
+    event.prompt();
+    const choice = await event.userChoice;
+    return choice?.outcome === "accepted" ? "accepted" : "dismissed";
+  } catch {
+    // Some browsers expose the event but refuse to open the dialog.
+    return "unavailable";
+  }
 }

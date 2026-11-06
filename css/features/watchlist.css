@@ -6,7 +6,7 @@
 /* Stats rendered as one ruled ledger, not cards */
 .stats {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
   margin: 0 0 clamp(var(--sp-7), 5vw, var(--sp-9));
   border-top: var(--hair) solid var(--border-strong);
   border-bottom: var(--hair) solid var(--border-strong);
@@ -232,7 +232,3 @@
   height: 24px;
 }
 
-/* Stats: five figures instead of four */
-.stats {
-  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-}

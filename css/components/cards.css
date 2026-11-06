@@ -30,14 +30,16 @@
   position: relative;
   aspect-ratio: 2 / 3;
   overflow: hidden;
-  background: var(--surface-3);
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--tint, var(--surface-3)) 32%, transparent), transparent 70%),
+    var(--surface-3);
 }
 
 .card__poster-wrap::after {
   /* bottom scrim keeps the episode stamp legible on any art */
   content: "";
   position: absolute;
-  inset: auto 0 0 0;
+  inset: auto 0 0;
   height: 38%;
   background: linear-gradient(180deg, transparent, rgba(6, 6, 8, 0.55));
   pointer-events: none;
@@ -62,22 +64,22 @@
   visibility: hidden;
 }
 
-/* Title placeholder when art is missing */
+/* Typographic plate for titles AniList has no artwork for */
 .card__poster-fallback {
   position: absolute;
   inset: 0;
-  display: grid;
-  place-content: center;
-  justify-items: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   gap: var(--sp-2);
-  padding: var(--sp-4);
+  padding: var(--sp-3);
   background:
     repeating-linear-gradient(
       -45deg,
-      transparent 0 7px,
-      color-mix(in srgb, var(--text) 5%, transparent) 7px 8px
+      transparent 0 6px,
+      color-mix(in srgb, var(--tint, var(--border)) 10%, transparent) 6px 7px
     ),
-    var(--surface-3);
+    linear-gradient(160deg, color-mix(in srgb, var(--tint, #333) 26%, var(--surface-3)), var(--surface-3));
   text-align: center;
 }
 
@@ -115,6 +117,7 @@
   font-size: var(--text-2xs);
   letter-spacing: 0.1em;
   text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
   pointer-events: none;
 }
 
@@ -152,7 +155,7 @@
   flex-direction: column;
   gap: 3px;
   padding-top: var(--sp-2-5);
-  border-top: var(--hair) solid var(--border);
+  border-top: 1px solid var(--border-faint);
   margin-top: var(--sp-2-5);
 }
 
@@ -532,20 +535,12 @@
    v3 additions: tint, segments, status, swipe
    ============================================================ */
 
-.card__poster-wrap {
-  background:
-    linear-gradient(160deg, color-mix(in srgb, var(--tint, var(--surface-3)) 32%, transparent), transparent 70%),
-    var(--surface-3);
-}
 
 .card:hover .card__poster-wrap::after,
 .card:focus-within .card__poster-wrap::after {
   opacity: 0.85;
 }
 
-.card__body {
-  border-top: 1px solid var(--border-faint);
-}
 
 .card:hover .card__title,
 .card:focus-within .card__title {
@@ -698,9 +693,6 @@
 
 .badge--genre:hover { color: var(--text); border-color: var(--text); }
 
-.card__ep {
-  font-variant-numeric: tabular-nums;
-}
 
 /* ---------- Swipe feedback (touch) ---------- */
 .card--saved {
@@ -731,24 +723,6 @@
   .card--saved { cursor: default; }
 }
 
-/* ---------- Poster fallback plate (no artwork on AniList) ---------- */
-.card__poster-fallback {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: var(--sp-3);
-  background:
-    repeating-linear-gradient(
-      -45deg,
-      transparent 0 6px,
-      color-mix(in srgb, var(--tint, var(--border)) 10%, transparent) 6px 7px
-    ),
-    linear-gradient(160deg, color-mix(in srgb, var(--tint, #333) 26%, var(--surface-3)), var(--surface-3));
-}
-
-.card__poster-fallback[hidden] { display: none; }
 
 .card__poster-monogram {
   font-family: var(--font-display);

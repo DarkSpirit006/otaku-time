@@ -106,8 +106,9 @@
 .detail-banner {
   position: relative;
   height: clamp(150px, 24vw, 250px);
-  background: var(--surface-3);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--tint, #444) 30%, var(--paper)), var(--paper) 70%);
   overflow: hidden;
+  border-bottom: var(--hair) solid var(--border);
 }
 
 .detail-banner img {
@@ -130,9 +131,6 @@
   pointer-events: none;
 }
 
-.detail-banner {
-  border-bottom: var(--hair) solid var(--border);
-}
 
 .detail-body {
   position: relative;
@@ -205,6 +203,7 @@
 }
 
 .detail-synopsis {
+  margin-top: var(--sp-4);
   max-height: 168px;
   overflow-y: auto;
   padding-right: var(--sp-3);
@@ -272,14 +271,12 @@
 }
 
 .detail-progress {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  font-family: var(--font-mono);
+  display: block;
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: var(--hair) solid var(--border);
   font-size: var(--text-2xs);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-faint);
+  color: var(--text);
 }
 
 .detail-progress label {
@@ -563,21 +560,9 @@
   overflow-wrap: anywhere;
 }
 
-.detail-synopsis {
-  margin-top: var(--sp-4);
-}
 
 /* ---- progress + personal ---- */
-.detail-progress {
-  display: block;
-  margin-top: var(--sp-4);
-  padding-top: var(--sp-4);
-  border-top: var(--hair) solid var(--border);
-  font-family: inherit;
-  letter-spacing: 0;
-  text-transform: none;
-  color: var(--text);
-}
+
 
 .detail-progress__head {
   display: flex;
@@ -654,10 +639,6 @@
 
 .detail-poster__empty svg { width: 28px; height: 28px; }
 
-.detail-banner {
-  background:
-    linear-gradient(150deg, color-mix(in srgb, var(--tint, #444) 30%, var(--paper)), var(--paper) 70%);
-}
 
 .detail-footer {
   margin: var(--sp-4) 0 0;

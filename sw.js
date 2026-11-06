@@ -9,10 +9,18 @@
      own network-first + IndexedDB fallback.
    ============================================================ */
 
-const VERSION = "otaku-time-v3";
+const VERSION = "otaku-time-v4";
 const SHELL_CACHE = `${VERSION}-shell`;
 const ART_CACHE = `${VERSION}-art`;
 const ART_LIMIT = 220;
+
+/**
+ * Only caches shaped like this worker's own are ever deleted. A shared
+ * origin (GitHub Pages serves many projects under one host) may hold
+ * caches from another app, another service worker, or a future Otaku
+ * Time build — none of those belong to this worker.
+ */
+const OWNED_CACHE = /^otaku-time-v\d+-(?:shell|art)$/;
 
 const SHELL = [
   "./",
@@ -31,6 +39,7 @@ const SHELL = [
   "./js/components/select.js",
   "./js/components/states.js",
   "./js/components/toast.js",
+  "./js/features/detail/facts.js",
   "./js/features/detail/index.js",
   "./js/features/recently-aired/index.js",
   "./js/features/search/index.js",
@@ -108,9 +117,10 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
       const keys = await caches.keys();
-      await Promise.all(
-        keys.filter((key) => !key.startsWith(VERSION)).map((key) => caches.delete(key))
+      const stale = keys.filter(
+        (key) => OWNED_CACHE.test(key) && key !== SHELL_CACHE && key !== ART_CACHE
       );
+      await Promise.all(stale.map((key) => caches.delete(key)));
       await self.clients.claim();
     })()
   );
@@ -134,15 +144,35 @@ async function trimArtCache() {
   }
 }
 
-async function staleWhileRevalidate(request, cacheName) {
+/**
+ * Can this response be stored?
+ *
+ * An opaque response is a cross-origin `no-cors` reply: the browser
+ * hides the status (0) and the headers, and the body cannot be read —
+ * but it is still a complete copy of the image, and <img> tags always
+ * produce one. Refusing opaque responses would mean caching no poster
+ * at all, which is why artwork opts in explicitly and same-origin
+ * assets never do.
+ */
+function isCacheable(response, { allowOpaque = false } = {}) {
+  if (!response) return false;
+  if (response.type === "opaque") return allowOpaque;
+  return response.ok;
+}
+
+async function staleWhileRevalidate(request, cacheName, { allowOpaque = false, onStored } = {}) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(request);
 
   const network = fetch(request)
     .then(async (response) => {
-      if (response && response.ok && response.type !== "opaque") {
+      if (isCacheable(response, { allowOpaque })) {
         try {
           await cache.put(request, response.clone());
+          // Housekeeping runs after the write that grew the cache, never
+          // before it — a trim that races the put leaves the cache over
+          // its limit until the next poster happens to arrive.
+          if (onStored) await onStored();
         } catch {
           /* cache write can fail under quota pressure */
         }
@@ -196,12 +226,11 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // AniList's image CDN, and only that host: posters are the one
+  // cross-origin request this app makes, and they arrive opaque.
   if (url.hostname === "s4.anilist.co") {
     event.respondWith(
-      staleWhileRevalidate(request, ART_CACHE).then((response) => {
-        trimArtCache();
-        return response;
-      })
+      staleWhileRevalidate(request, ART_CACHE, { allowOpaque: true, onStored: trimArtCache })
     );
   }
 });

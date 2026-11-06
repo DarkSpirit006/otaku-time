@@ -233,6 +233,10 @@ function enhance(select) {
   return state;
 }
 
+// Iteration over the Set is safe while deleting entries: a Set visits
+// every element that was present when the loop started, except ones
+// already deleted. closeWrapper() never touches `wrappers`, so no copy
+// of the set is needed here.
 let globalBound = false;
 function bindGlobalHandlers() {
   if (globalBound) return;
@@ -240,7 +244,7 @@ function bindGlobalHandlers() {
   document.addEventListener(
     "pointerdown",
     (event) => {
-      for (const state of [...wrappers]) {
+      for (const state of wrappers) {
         if (!state.select.isConnected) {
           wrappers.delete(state);
           continue;
@@ -256,7 +260,7 @@ function bindGlobalHandlers() {
 
 /** Enhance all currently-unenhanced native selects under root. */
 export function enhanceSelects(root = document) {
-  for (const state of [...wrappers]) {
+  for (const state of wrappers) {
     if (!state.select.isConnected) wrappers.delete(state);
   }
   for (const select of qsa("select", root)) enhance(select);
@@ -279,7 +283,7 @@ export function observeSelects(root = document.body) {
 
 /** Close every open custom select (optionally except one). */
 export function closeAllSelects(except = null) {
-  for (const state of [...wrappers]) {
+  for (const state of wrappers) {
     if (!state.select.isConnected) {
       wrappers.delete(state);
       continue;

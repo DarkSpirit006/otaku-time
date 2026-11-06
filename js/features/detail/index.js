@@ -7,7 +7,7 @@
    ============================================================ */
 
 import { details as fetchDetails } from "../../api/anilist.js";
-import { titleOf, formatLabel, statusLabel, cleanDescription, genreLine } from "../../utils/format.js";
+import { titleOf, formatLabel, cleanDescription, genreLine } from "../../utils/format.js";
 import { countdown, airingTime } from "../../utils/time.js";
 import { watchlist, LIST_STATUSES, LIST_STATUS_LABELS, progressCap } from "../../storage/watchlist.js";
 import { canComplete } from "../../utils/media-state.js";
@@ -17,6 +17,7 @@ import { showToast } from "../../components/toast.js";
 import { syncFromMedia } from "../../services/metadata.js";
 import { offerUndo } from "../../services/undo.js";
 import { buildCalendar, icsFileName } from "../../utils/ics.js";
+import { dateLabel, detailFacts, detailLinks, safeUrl } from "./facts.js";
 import { downloadFile } from "../upcoming/index.js";
 
 let dialog = null;
@@ -56,14 +57,6 @@ function streamBadge(site) {
     : `<span class="link-chip__mark" aria-hidden="true">${icon("globe")}</span>`;
 }
 
-function safeUrl(value) {
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" ? url.toString() : null;
-  } catch {
-    return null;
-  }
-}
 
 export function initDetail(ctx) {
   ctxRef = ctx;
@@ -324,12 +317,6 @@ export function closeDetail({ viaHistory = false } = {}) {
    Rendering
    ------------------------------------------------------------ */
 
-function dateLabel(date) {
-  if (!date?.year) return "";
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const month = date.month ? months[date.month - 1] : "";
-  return [month, date.day, date.year].filter(Boolean).join(" ");
-}
 
 function tintOf(media) {
   const hue = String(media?.coverImage?.color || "").replace("#", "");
@@ -378,14 +365,7 @@ function renderDetail(media, { loaded, fetchError = "" }) {
     : `<div class="detail-poster__empty">${icon("film")}</div>`;
 
   /* ---- links ---- */
-  const links = (media.externalLinks || [])
-    .map((link) => ({ ...link, safe: safeUrl(link.url) }))
-    .filter((link) => link.safe);
-  const streaming = links.filter((link) => link.type === "STREAMING").slice(0, 6);
-  const others = links.filter((link) => link.type !== "STREAMING").slice(0, 6);
-  const trailer = media.trailer?.site === "youtube" && media.trailer?.id
-    ? { site: "YouTube", url: `https://www.youtube.com/watch?v=${encodeURIComponent(media.trailer.id)}` }
-    : null;
+  const { streaming, others, trailer } = detailLinks(media);
 
   const linkChip = (link) =>
     `<a class="link-chip" href="${esc(link.safe)}" target="_blank" rel="noopener noreferrer noreferrer">
@@ -393,23 +373,7 @@ function renderDetail(media, { loaded, fetchError = "" }) {
     </a>`;
 
   /* ---- facts ---- */
-  const studios = (media.studios || [])
-    .filter((studio) => studio.isMain || studio.isAnimationStudio)
-    .map((studio) => studio.name)
-    .filter(Boolean);
-  const facts = [
-    media.format ? ["Format", formatLabel(media.format)] : null,
-    total !== null ? ["Episodes", String(total)] : null,
-    media.duration ? ["Runtime", `${media.duration} min`] : null,
-    media.mediaStatus || media.status ? ["Status", statusLabel(media.mediaStatus || media.status)] : null,
-    dateLabel(media.startDate) ? ["Started", dateLabel(media.startDate)] : null,
-    dateLabel(media.endDate) ? ["Ended", dateLabel(media.endDate)] : null,
-    studios.length ? ["Studio", studios.slice(0, 2).join(", ")] : null,
-    Number.isInteger(media.averageScore) && media.averageScore > 0 ? ["AniList score", `${media.averageScore}%`] : null,
-    Number.isInteger(media.popularity) && media.popularity > 0
-      ? ["Popularity", `${media.popularity.toLocaleString("en-US")} users`]
-      : null,
-  ].filter(Boolean);
+  const facts = detailFacts(media, total);
 
   const synonyms = (media.synonyms || []).filter((value) => value && value !== title).slice(0, 3);
 

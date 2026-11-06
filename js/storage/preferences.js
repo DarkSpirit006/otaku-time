@@ -132,9 +132,9 @@ export function createPreferences(storage = DEFAULT_STORE) {
     return get();
   }
 
-  function set(patch) {
+  function set(patch = {}) {
     read();
-    prefs = { ...prefs, ...sanitize({ ...prefs, ...(patch || {}) }) };
+    prefs = { ...prefs, ...sanitize({ ...prefs, ...patch }) };
     write();
     return get();
   }

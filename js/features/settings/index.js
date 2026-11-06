@@ -12,6 +12,7 @@ import { watchlist } from "../../storage/watchlist.js";
 import { clearCaches, restoreFromCache, refreshLoaded } from "../../services/schedule.js";
 import { snapshotAll, restoreAll } from "../../storage/cache.js";
 import { notificationSupport, clearReminders, reminderCount } from "../../services/notifications.js";
+import { canInstall, promptInstall } from "../../services/pwa.js";
 import { offerUndo } from "../../services/undo.js";
 import { detectedZone, validZone } from "../../utils/time.js";
 
@@ -220,6 +221,18 @@ function renderSettings() {
         ${!available ? `<p class="settings-hint">Storage is unavailable — changes last only until you close this tab.</p>` : ""}
       </section>
 
+      ${
+        canInstall()
+          ? `<section class="settings-group">
+        <h3><span class="group-index">04</span> Install</h3>
+        <p>Keep Otaku Time on the home screen or dock. It opens without a browser frame and still works offline.</p>
+        <div class="settings-actions">
+          <button class="btn btn--secondary" data-settings-action="install-app">${icon("download")} Add to this device</button>
+        </div>
+      </section>`
+          : ""
+      }
+
       <p class="settings-footer">
         Otaku Time keeps no account and sends no analytics. Schedule data from AniList.
         ${navigator.serviceWorker ? "Installed as an app? Updates appear as a toast when a new version is ready." : ""}
@@ -253,6 +266,10 @@ function onClick(event) {
   }
   if (action === "import") {
     fileInput?.click();
+    return;
+  }
+  if (action === "install-app") {
+    installApp(button);
     return;
   }
   if (action === "clear-cache") {
@@ -351,6 +368,25 @@ async function toggleNotifications(enabled, field) {
     updatePrefs({ notifications: false });
     field.checked = false;
     showToast("Notifications are blocked in your browser settings.");
+  }
+}
+
+/**
+ * Offer the install dialog the browser already prepared. Every outcome is
+ * reported as what actually happened — including "the browser changed its
+ * mind", which is not the user's fault and not a success.
+ */
+async function installApp(button) {
+  button.disabled = true;
+  try {
+    const result = await promptInstall();
+    if (result === "accepted") showToast("Installing Otaku Time — it will appear with your apps.");
+    else if (result === "dismissed") showToast("Install cancelled. The offer stays in Settings until you reload.");
+    else showToast("This browser isn't offering the install right now.");
+  } finally {
+    button.disabled = false;
+    // A spent event can never be replayed, so the button must not linger.
+    closeSettings();
   }
 }
 

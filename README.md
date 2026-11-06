@@ -31,7 +31,7 @@ Otaku Time is designed like a printed broadcast almanac rather than a dashboard:
 - **Command palette** (`Ctrl`/`Cmd`+`K`), `?` for the shortcut map, `g u` / `g w` / `g r` to jump between sections, `j`/`k` to move through lists, `Escape` to back out. None of it fires while you are typing in a field.
 - **Keyboard-and-pointer parity**: swipe on a card to bump progress or remove it, pull to refresh — and a button that does the same thing in both cases.
 - **Calendar export**: an episode or the whole watchlist as `.ics`, with `VALARM` reminders, stable UIDs, correct escaping and time zones. Your phone's calendar app will nag you even when the tab is closed, which the browser cannot.
-- **Offline**: the app shell is precached by a service worker, schedules are snapshotted in IndexedDB, artwork is cached stale-while-revalidate, and a stale schedule says so instead of pretending to be live. A new version surfaces as "Update ready" — never a forced reload.
+- **Offline**: the app shell is precached by a service worker, schedules are snapshotted in IndexedDB, and the last 220 posters are cached as opaque CDN responses so a reopened page keeps its artwork. A stale schedule says so instead of pretending to be live. A new version surfaces as "Update ready" — never a forced reload.
 
 ## Data & privacy
 
@@ -71,12 +71,15 @@ The suites are deterministic and run offline: every AniList call is intercepted 
 
 | Suite | Covers |
 | --- | --- |
-| `tests/unit/` (178) | time zones, countdowns, ICS generation, search ranking, response normalisation, the API client (cache, dedupe, retries, rate limits, cancellation), storage (migrations v1→v3, corruption, quota, import/export validation), schedule state machine, progress caps |
-| `tests/e2e/app.spec.js` (27) | the three sections, search, detail, watchlist flows, deep links, palette, shortcuts, calendar, plus per-bug regressions |
+| `tests/unit/` (205) | time zones, countdowns, ICS generation, search ranking, response normalisation, the API client (cache, dedupe, retries, rate limits, cancellation), storage (migrations v1→v3, corruption, quota, import/export validation), schedule state machine, progress caps, the service worker (cache ownership, opaque artwork, routing), the install-prompt state machine, detail-dialog fact and link rules |
+| `tests/e2e/app.spec.js` (31) | the three sections, search, detail, watchlist flows, deep links, palette, shortcuts, calendar, install offers, plus per-bug regressions |
 | `tests/e2e/edge-cases.spec.js` (16) | API failures, rate limits, storage hazards, multi-tab sync, reduced motion, offline, infinite scroll, data portability |
 | `tests/e2e/a11y.spec.js` (41) | axe-core on every primary view and dialog, in both themes, at three widths — zero serious or critical violations |
 | `tests/e2e/visual.spec.js` (32) | three sections × dark/light × 360/768/1440, plus detail and search — reviewed by eye, not auto-accepted |
-| `tests/e2e/offline.spec.js` (6) | the real service worker: cold start with no network, manifest and icons, deep links after reload |
+| `tests/e2e/offline.spec.js` (8) | the real service worker: cold start with no network, manifest and icons, deep links after reload, cache ownership on a shared origin, posters cached and decoded offline |
+| `tests/e2e/pagination.spec.js` (5) | loaded-count copy while pages remain, and the "full window" claim only once AniList runs out |
+
+`npm run check:assets` verifies the other half of the offline promise: every path in the service worker's precache list exists, every module reachable from the entry points is precached, and every `url()` in every stylesheet resolves. It runs in CI's unit job and takes about 150 ms.
 
 Every fixed bug landed with a regression test that failed first. Two examples worth keeping in mind: the countdown ticker used to wipe the air time out of every card one second after load, and "aired earlier today" rows declared four grid tracks for five children, so a 54px thumbnail rendered 640px wide.
 

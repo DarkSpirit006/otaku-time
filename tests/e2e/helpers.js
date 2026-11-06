@@ -6,8 +6,14 @@
 
 const HOST = "https://graphql.anilist.co/**";
 
-const COVER = "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx1.jpg";
-const BANNER = "https://s4.anilist.co/file/anilistcdn/media/anime/banner/1.jpg";
+// Real AniList CDN files (ONE PIECE, id 21) at their true sizes: ~13 KB,
+// ~54 KB and ~158 KB. The suite loads actual posters so srcset selection,
+// decode and the service-worker artwork cache are exercised for real;
+// tests/e2e/assets.spec.js re-checks that these URLs still answer 200.
+const COVER_SMALL = "https://s4.anilist.co/file/anilistcdn/media/anime/cover/small/bx21-ELSYx3yMPcKM.jpg";
+const COVER_MEDIUM = "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx21-ELSYx3yMPcKM.jpg";
+const COVER_LARGE = "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx21-ELSYx3yMPcKM.jpg";
+const BANNER = "https://s4.anilist.co/file/anilistcdn/media/anime/banner/21-wf37VakJmZqs.jpg";
 
 /** Build a normalized-looking AniList Media object. */
 export function makeMedia(id, title, overrides = {}) {
@@ -29,7 +35,7 @@ export function makeMedia(id, title, overrides = {}) {
     startDate: { year: 2026, month: 10, day: 1 },
     endDate: null,
     title: { romaji: `${title} Romaji`, english: title, native: `${title} JP` },
-    coverImage: { medium: COVER, large: COVER, extraLarge: COVER },
+    coverImage: { medium: COVER_SMALL, large: COVER_MEDIUM, extraLarge: COVER_LARGE },
     bannerImage: BANNER,
     studios: { nodes: [{ name: "Test Studio", isAnimationStudio: true }] },
     nextAiringEpisode: null,

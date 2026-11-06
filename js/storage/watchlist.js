@@ -456,11 +456,11 @@ export function createWatchlist(storage = DEFAULT_STORE, options = {}) {
     return true;
   }
 
-  function setReminder(id, patch) {
+  function setReminder(id, patch = {}) {
     read();
     const item = state.items.find((i) => i.id === id);
     if (!item) return false;
-    const next = { ...item.reminder, ...(patch || {}) };
+    const next = { ...item.reminder, ...patch };
     item.reminder = {
       enabled: typeof next.enabled === "boolean" ? next.enabled : null,
       lead: isInt(next.lead) && next.lead >= 0 ? next.lead : null,
