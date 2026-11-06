@@ -380,13 +380,16 @@ function renderDetail(media, { loaded, fetchError = "" }) {
   const next = media.nextAiringEpisode;
   const nextBlock = next?.airingAt
     ? `<div class="detail-next">
-        <div>
-          <strong>Next episode</strong>
-          <span>Episode ${next.episode} · ${esc(airingTime(next.airingAt, prefs.timezone, prefs.hour12))}</span>
+        <div class="detail-next__head">
+          <strong>Next episode — ep ${String(next.episode).padStart(2, "0")}</strong>
+          <button class="detail-ics" data-detail-action="export-episode">Add .ics ${icon("download")}</button>
         </div>
-        <time data-countdown data-epoch="${next.airingAt}" data-duration="${media.duration ?? 0}">${esc(
-          countdown(next.airingAt, media.duration, Date.now() / 1000)
-        )}</time>
+        <div class="detail-next__row">
+          <time class="detail-next__count" data-countdown data-epoch="${next.airingAt}" data-duration="${media.duration ?? 0}">${esc(
+            countdown(next.airingAt, media.duration, Date.now() / 1000)
+          )}</time>
+          <span class="detail-next__when">${esc(airingTime(next.airingAt, prefs.timezone, prefs.hour12))}</span>
+        </div>
       </div>`
     : "";
 
@@ -467,56 +470,91 @@ function renderDetail(media, { loaded, fetchError = "" }) {
         <button class="btn btn--ghost btn--sm" data-detail-action="retry-details">Retry</button></div>`
     : "";
 
+  /* Dossier chips: only the fields AniList actually returned. */
+  const chips = [
+    media.format ? formatLabel(media.format) : "",
+    media.mediaStatus || media.status || "",
+    Number.isInteger(media.episodes) ? `${media.episodes} episodes` : "Episodes TBA",
+    media.seasonYear ? `${media.season || ""} ${media.seasonYear}`.trim() : "",
+    Number.isInteger(media.averageScore) && media.averageScore > 0 ? `${(media.averageScore / 10).toFixed(1)}` : "",
+  ].filter(Boolean);
+
   content.innerHTML = `
-    <button class="dialog__close" data-detail-action="close" aria-label="Close details">${icon("close")}</button>
-    <div class="detail-banner ${tintOf(media)}">${banner}</div>
+    <header class="dossier-head">
+      <p class="dossier-head__file">File #${media.id} — dossier</p>
+      <button class="dialog__close" data-detail-action="close" aria-label="Close details">${icon("close")}</button>
+    </header>
+    <div class="detail-banner ${tintOf(media)}">
+      ${banner}
+      <div class="detail-banner__title">
+        <h2 class="detail-title" id="detail-title">${esc(title)}</h2>
+      </div>
+    </div>
     <div class="detail-body">
       <div class="detail-poster">${poster}</div>
       <div class="detail-main">
-        <p class="detail-eyebrow">
-          ${[media.mediaStatus || media.status, formatLabel(media.format), media.seasonYear ? `${media.season || ""} ${media.seasonYear}`.trim() : ""]
-            .filter(Boolean)
-            .map((part) => `<span>${esc(part)}</span>`)
-            .join('<span aria-hidden="true">·</span>')}
-        </p>
-        <h2 class="detail-title" id="detail-title">${esc(title)}</h2>
         ${media.title?.romaji && media.title.romaji !== title ? `<p class="detail-sub">${esc(media.title.romaji)}</p>` : ""}
         ${media.title?.native && media.title.native !== title ? `<p class="detail-sub detail-sub--native">${esc(media.title.native)}</p>` : ""}
-        ${synonyms.length ? `<p class="detail-alias">Also known as ${esc(synonyms.join(" · "))}</p>` : ""}
+        ${synonyms.length ? `<p class="detail-alias">Synonyms — ${esc(synonyms.join(" · "))}</p>` : ""}
+
+        <div class="detail-chips">
+          ${chips
+            .map(
+              (chip, index) =>
+                `<span class="detail-chip${index === 1 && /RELEASING|AIRING/i.test(chip) ? " detail-chip--live" : ""}">${
+                  index === 4 ? `<span class="detail-chip__star" aria-hidden="true">★</span>` : ""
+                }${esc(chip)}</span>`
+            )
+            .join("")}
+        </div>
+
         ${fetchNotice}
         ${scheduleChangeBlock(item)}
-
-        ${streaming.length ? `<div class="detail-links" aria-label="Where to watch">${streaming.map(linkChip).join("")}</div>` : ""}
-
-        <div class="detail-tags">${(media.genres || [])
-          .slice(0, 6)
-          .map((genre) => `<button class="badge badge--genre" data-action="genre" data-value="${esc(genre)}">${esc(genre)}</button>`)
-          .join("")}</div>
-
-        <dl class="detail-facts">
-          ${facts
-            .map(([key, value]) => `<div class="detail-fact"><dt>${esc(key)}</dt><dd>${esc(value)}</dd></div>`)
-            .join("")}
-        </dl>
-
-        <div class="detail-synopsis" tabindex="0" role="group" aria-label="Synopsis">${esc(synopsis)}</div>
-
         ${nextBlock}
+
+        <div class="detail-actions">
+          <button class="btn ${item ? "btn--secondary" : "btn--primary"} detail-save" data-detail-action="toggle-save">
+            ${icon(item ? "check" : "plus")} ${item ? "In watchlist" : "Save to watchlist"}
+          </button>
+          ${trailer ? `<a class="btn btn--ghost" href="${esc(trailer.url)}" target="_blank" rel="noopener noreferrer">${icon("play")} Trailer</a>` : ""}
+        </div>
+
         ${progressBlock}
         ${personalBlock}
 
-        <div class="detail-actions">
-          <button class="btn ${item ? "btn--secondary" : "btn--primary"}" data-detail-action="toggle-save">
-            ${icon(item ? "check" : "plus")} ${item ? "In watchlist" : "Add to watchlist"}
-          </button>
-          ${
-            next?.airingAt
-              ? `<button class="btn btn--ghost" data-detail-action="export-episode">${icon("download")} Add episode to calendar</button>`
-              : ""
-          }
-          ${trailer ? `<a class="btn btn--ghost" href="${esc(trailer.url)}" target="_blank" rel="noopener noreferrer">${icon("play")} Trailer</a>` : ""}
-          ${others.map(linkChip).join("")}
-        </div>
+        <section class="detail-sec">
+          <h3 class="detail-sec__label">Synopsis</h3>
+          <div class="detail-synopsis" tabindex="0" role="group" aria-label="Synopsis">${esc(synopsis)}</div>
+        </section>
+
+        <section class="detail-sec">
+          <h3 class="detail-sec__label">On record</h3>
+          <dl class="detail-facts">
+            ${facts
+              .map(([key, value]) => `<div class="detail-fact"><dt>${esc(key)}</dt><dd>${esc(value)}</dd></div>`)
+              .join("")}
+          </dl>
+        </section>
+
+        ${
+          streaming.length || others.length
+            ? `<section class="detail-sec">
+                 <h3 class="detail-sec__label">Where to watch</h3>
+                 <div class="detail-links" aria-label="Where to watch">${streaming
+                   .concat(others)
+                   .map(linkChip)
+                   .join("")}</div>
+               </section>`
+            : ""
+        }
+
+        <section class="detail-sec">
+          <h3 class="detail-sec__label">Genres</h3>
+          <div class="detail-tags">${(media.genres || [])
+            .map((genre) => `<button class="badge badge--genre" data-action="genre" data-value="${esc(genre)}">${esc(genre)}</button>`)
+            .join("")}</div>
+        </section>
+
         <p class="detail-footer">
           ${esc(genreLine(media.genres) || "Anime")}${
             Number.isInteger(media.episodes) ? ` · ${media.episodes} episodes` : ""

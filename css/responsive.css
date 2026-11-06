@@ -10,7 +10,7 @@
     --content-pad: clamp(32px, 3.2vw, 72px);
   }
 
-  .card-grid,
+  .card-grid:not(.card-grid--library),
   .skeleton-grid {
     grid-template-columns: repeat(auto-fill, minmax(208px, 1fr));
   }
@@ -18,10 +18,9 @@
 
 /* ---------- Tablet / small laptop ---------- */
 @media (max-width: 1180px) {
-  .spotlight {
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
-  }
-
+  /* No second column: the feature is one panel, and its copy keeps the
+     full measure. Splitting it into 1.15fr/0.85fr left the countdown
+     squeezed into 57% of the plate below 1180px. */
   .spotlight__title {
     font-size: clamp(1.9rem, 1rem + 2.6vw, 3rem);
   }
@@ -30,6 +29,39 @@
 /* ============================================================
    ≤ 960px — the rail becomes a broadcast tab bar
    ============================================================ */
+/* ------------------------------------------------------------
+   Shell switchover.
+   The rail is the desktop chrome; below 1024px it is removed from
+   layout entirely and the compact bar + tab bar replace it. Only one
+   set is ever displayed, so no control or landmark is duplicated.
+   ------------------------------------------------------------ */
+@media (max-width: 1023px) {
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rail {
+    display: none;
+  }
+
+  .topbar {
+    display: flex;
+  }
+
+  .tabbar {
+    display: grid;
+  }
+
+  .content {
+    padding: 22px var(--sp-4) calc(var(--tabbar-h) + var(--sp-8) + env(safe-area-inset-bottom, 0px));
+  }
+
+  .footer {
+    margin-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+    padding: 20px var(--sp-4) calc(var(--sp-6) + var(--tabbar-h) * 0.2);
+  }
+}
+
 @media (max-width: 960px) {
   /* Phone type scale: the mono labels were set for a wide screen. At
      arm's length they need to reach 12px, so the two smallest tiers
@@ -40,125 +72,6 @@
     --text-sm: 0.875rem;
   }
 
-  .app {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .sidebar {
-    display: none;
-  }
-
-  .topbar {
-    gap: var(--sp-3);
-    padding: 0 var(--sp-4);
-  }
-
-  .topbar__brand {
-    display: inline-flex;
-  }
-
-  .topbar__brand .brand__mark svg {
-    width: 24px;
-    height: 24px;
-  }
-
-  .search {
-    max-width: none;
-    height: 36px;
-  }
-
-  .topbar__extras {
-    gap: var(--sp-2);
-  }
-
-  .topbar__sync {
-    display: none;
-  }
-
-  .clock {
-    display: none;
-  }
-
-  .topbar__action {
-    display: grid;
-    width: 32px;
-    height: 32px;
-  }
-
-  .content {
-    padding: var(--sp-5) var(--sp-4) calc(var(--tabbar-h) + var(--sp-8) + env(safe-area-inset-bottom, 0px));
-  }
-
-  .footer {
-    margin-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
-    padding: var(--sp-4) var(--sp-4) var(--sp-6);
-  }
-
-  .tabbar {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 80;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    height: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-    background: color-mix(in srgb, var(--paper) 92%, transparent);
-    border-top: var(--hair) solid var(--border-strong);
-    backdrop-filter: blur(16px) saturate(1.15);
-  }
-
-  .tabbar__indicator {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: calc(100% / 3);
-    height: 2px;
-    background: var(--accent);
-    transform: translateX(var(--indicator-x, 0%));
-    transition: transform var(--dur-base) var(--ease-out);
-  }
-
-  .tabbar__link {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
-    font-family: var(--font-mono);
-    font-size: 0.78rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-faint);
-    transition: color var(--dur-fast) linear;
-  }
-
-  .tabbar__link svg {
-    width: 18px;
-    height: 18px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.5;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-
-  .tabbar__link.is-active {
-    color: var(--accent-text);
-  }
-
-  .tabbar__count {
-    position: absolute;
-    top: 8px;
-    left: calc(50% + 8px);
-    min-width: 16px;
-    height: 16px;
-    font-size: 0.72rem;
-    padding: 0 3px;
-  }
-
   .toast {
     left: var(--sp-4);
     right: var(--sp-4);
@@ -166,11 +79,40 @@
     max-width: none;
   }
 
-  /* Masthead scales down but keeps its editorial voice */
+  /* Masthead: one column, controls beneath the filing line. A grid with an
+     auto column beside the title squeezes the headline to three letters
+     per line at phone widths. */
+  .section-head {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .section-head__left {
+    order: 1;
+    min-width: 0;
+  }
+
+  .section-head__aside {
+    order: 2;
+    width: 100%;
+    padding-bottom: 0;
+  }
+
+  .section-head__aside .seg {
+    width: 100%;
+  }
+
+  .section-head__aside .seg-btn {
+    flex: 1;
+  }
+
+  /* Masthead scales down but keeps its editorial voice. Words are never
+     broken: the size is what adapts, not the spelling. */
   #section-title {
-    font-size: clamp(2rem, 5.4vw, 3.6rem);
-    letter-spacing: -0.045em;
-    overflow-wrap: anywhere;
+    font-size: clamp(1.95rem, 5.2vw, 3.6rem);
+    letter-spacing: -0.035em;
+    overflow-wrap: normal;
+    word-break: keep-all;
   }
 
   .section-head {
@@ -178,105 +120,197 @@
     padding-bottom: var(--sp-3);
   }
 
-  /* Feature collapses to poster-first cinema */
+  /* Feature plate: same panel, tighter type and less art showing so the
+     headline keeps the page colour behind it. */
   .spotlight {
-    grid-template-columns: minmax(0, 1fr);
     min-height: 0;
+    padding: var(--sp-5) var(--sp-4);
+    --hero-art: 0.42;
   }
 
-  .spotlight__media {
-    order: 1;
-    margin: 0 calc(var(--sp-4) * -1);
-    height: clamp(240px, 54vw, 380px);
+  [data-theme="light"] .spotlight {
+    --hero-art: 0.28;
   }
 
-  .spotlight__poster {
-    min-height: 0;
+  .spotlight__media img {
+    object-position: 68% 14%;
   }
 
-  .spotlight__poster img {
-    object-position: center 28%;
+  .spotlight__veil {
+    background:
+      radial-gradient(90% 60% at 90% 4%, color-mix(in srgb, var(--tint, var(--accent)) 32%, transparent), transparent 68%),
+      linear-gradient(180deg, color-mix(in srgb, var(--paper) 72%, transparent) 0%, color-mix(in srgb, var(--paper) 92%, transparent) 46%, var(--paper) 88%);
   }
 
-  /* The content block overlaps the poster by 32px on phones, so the
-     fade must be fully opaque before the eyebrow label starts — red on
-     an arbitrary artwork is unreadable. Stops are measured against
-     .spotlight__label at ~93% of the media height. */
-  .spotlight .spotlight__poster::after {
-    background: linear-gradient(
-      180deg,
-      transparent 36%,
-      color-mix(in srgb, var(--paper) 82%, transparent) 72%,
-      var(--paper) 88%
-    );
+  .spotlight__count {
+    font-size: clamp(1.9rem, 7.6vw, 2.5rem);
+    gap: 4px;
+    max-width: 100%;
   }
 
-  .spotlight__content {
-    order: 2;
-    max-width: none;
-    padding: var(--sp-4) 0 0;
-    margin-top: calc(var(--sp-7) * -1);
-    position: relative;
+  /* The unit labels stay: "00:04:33" is a clock, "00 HRS : 04 MIN : 33
+     SEC" is a countdown, and the reference keeps them at every width.
+     They only need to be smaller. */
+  .spotlight__unit {
+    font-size: 0.42rem;
+    letter-spacing: 0.08em;
+  }
+
+  .spotlight__cell {
+    gap: 3px;
+  }
+
+  .spotlight__count-label {
+    padding-bottom: 0.35em;
   }
 
   .spotlight__title {
-    font-size: clamp(1.8rem, 1rem + 4.2vw, 2.9rem);
-    max-width: 22ch;
+    font-size: clamp(1.85rem, 7.6vw, 2.6rem);
   }
 
-  /* ---------- Prototype: text-first feature (?spotlight=text) ----------
-     The phone feature leads with the headline and follows with the
-     artwork as a full-bleed strip. Same content, opposite emphasis: the
-     poster stops being the thing that has to load before the page can
-     score. */
-  :root[data-spotlight="text"] .spotlight__content {
-    order: 1;
-    margin-top: 0;
-    padding: var(--sp-5) 0 0;
+  .spotlight__rail {
+    display: none;
   }
 
-  :root[data-spotlight="text"] .spotlight__media {
-    order: 2;
-    height: auto;
-    aspect-ratio: 21 / 9;
-    margin: var(--sp-5) calc(var(--sp-4) * -1) 0;
-  }
-
-  :root[data-spotlight="text"] .spotlight__poster {
-    border-left: 0;
-    border-top: var(--hair) solid var(--border);
-    border-bottom: 0;
-  }
-
-  :root[data-spotlight="text"] .spotlight__poster img {
-    object-position: center 22%;
-  }
-
-  /* No content sits on the artwork in this variant, so the scrim only
-     has to soften the strip's leading edge into the page. */
-  :root[data-spotlight="text"] .spotlight .spotlight__poster::after {
-    background: linear-gradient(
-      180deg,
-      var(--paper) 0%,
-      color-mix(in srgb, var(--paper) 55%, transparent) 12%,
-      transparent 34%
-    );
-  }
-
-  :root[data-spotlight="text"] .spotlight__countdown {
-    border-top: var(--hair) solid var(--border);
-    padding-top: var(--sp-4);
-  }
-
-  .spotlight__countdown {
-    border-top: 0;
-    padding-top: 0;
+  .spotlight__actions .btn {
+    flex: 1 1 auto;
   }
 }
 
 /* ============================================================
    ≤ 640px — phones: compact but still composed
    ============================================================ */
+/* Library rows: two lines per entry, no horizontal scroll. */
+@media (max-width: 1023px) {
+  /* The next-airing text is long ("Ep 12 · in 1h 59m 59s"). Sharing a
+     column with the actions squeezed the title down to an ellipsis, so it
+     gets its own full-width row and the title keeps the measure. */
+  .card--saved {
+    grid-template-columns: 1.4rem 2.75rem minmax(0, 1fr) auto;
+    grid-template-areas:
+      "idx cover body actions"
+      "idx cover status status"
+      "idx cover progress progress"
+      "idx cover next next";
+    gap: 4px 12px;
+    align-items: start;
+    padding: 10px 4px;
+  }
+
+  .card--saved::before {
+    grid-area: idx;
+    padding-top: 4px;
+  }
+
+  .card--saved .card__poster-wrap {
+    grid-area: cover;
+    width: 2.75rem;
+  }
+
+  .card--saved .card__body {
+    grid-area: body;
+  }
+
+  .card--saved .card__status {
+    grid-area: status;
+    align-self: center;
+    padding-top: 2px;
+  }
+
+  /* One clamped line is right for the desktop list, where every title has
+     to sit on the same baseline. On a phone there is no column to line up
+     with, so a long title gets its second line instead of an ellipsis. */
+  .card--saved .card__title {
+    -webkit-line-clamp: 2;
+  }
+
+  .card--saved .card__progress {
+    grid-area: progress;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2px;
+  }
+
+  .card--saved .card__progress .segments {
+    display: none;
+  }
+
+  .card--saved .card__next {
+    grid-area: next;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px;
+    margin-top: 2px;
+  }
+
+  /* The "Next" label is redundant once the countdown is on its own row and
+     says "Ep 6 · in 1h 59m" at 9px — dropping it returns 14px of height
+     and the words are still all there in the countdown itself. */
+  .card--saved .card__next-label {
+    display: none;
+  }
+
+  .card--saved .card__airing {
+    font-size: 0.6rem;
+    letter-spacing: 0.06em;
+  }
+
+  .card--saved .card__next-label {
+    display: none;
+  }
+
+  .card--saved .card__row-actions {
+    grid-area: actions;
+    align-self: start;
+  }
+
+  .card--saved .card__row-actions .badge {
+    display: none;
+  }
+}
+
+/* ============================================================
+   Ledger: four figures need four wide cells
+
+   `repeat(auto-fit, minmax(120px, 1fr))` will happily place four cells in
+   a 660px column, which is where a long runner's "458h 48m" runs out of
+   room. Two rows of two give every figure the width to stay on its line,
+   and the block still reads as a ruled print table rather than cards.
+   ============================================================ */
+@media (max-width: 1100px) {
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stat {
+    padding: var(--sp-3);
+  }
+
+  /* A 2×2 print block: the right-hand cell of each row stops at the page
+     edge instead of ruling down it. */
+  .stat:nth-child(even) {
+    border-right: 0;
+  }
+
+  .stat:nth-child(odd) {
+    padding-left: 0;
+  }
+
+  .stat:nth-child(1),
+  .stat:nth-child(2) {
+    border-bottom: var(--hair) solid var(--border);
+  }
+
+  /* Hairlines between the two cells of a row, not through the middle of
+     the block: 2 × 2 with one vertical rule that stops at each row. */
+  .stat:nth-child(3) {
+    border-right: var(--hair) solid var(--border);
+  }
+}
+
 @media (max-width: 640px) {
   .content {
     padding: var(--sp-4) var(--sp-4) calc(var(--tabbar-h) + var(--sp-8));
@@ -299,10 +333,10 @@
     font-size: var(--text-2xs);
   }
 
-  .card-grid,
+  .card-grid:not(.card-grid--library),
   .skeleton-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: var(--sp-5) var(--sp-3);
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 8px;
   }
 
   .card__title {
@@ -325,26 +359,11 @@
     font-size: 0.78rem;
   }
 
-  /* Ledger: two rows of two figures */
-  .stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .stat {
-    padding: var(--sp-3);
-  }
-
-  .stat:nth-child(2) {
-    border-right: 0;
-  }
-
-  .stat:nth-child(1),
-  .stat:nth-child(2) {
-    border-bottom: var(--hair) solid var(--border);
-  }
-
+  /* "6h 48m" is a word, not a figure — it takes a smaller optical size so
+     it sits beside "17" without wrapping into two lines. */
   .stat__value {
-    font-size: 2rem;
+    font-size: min(clamp(1.35rem, 6.6vw, 2rem), 11.8cqi);
+    white-space: nowrap;
   }
 
   /* Broadcast log: timestamp folds under the title */
@@ -353,11 +372,19 @@
     grid-template-rows: auto auto;
     grid-template-areas:
       "poster body actions"
-      "poster ago actions";
+      "poster clock ago";
     align-items: center;
     column-gap: var(--sp-3);
     row-gap: 2px;
     padding: var(--sp-3) 0;
+  }
+
+  /* Below 640 the clock has no column of its own: the second line reads
+     "10:39 AM …… 2h ago", clock left, relative time right, with the save
+     control staying beside the title. */
+  .row__clock {
+    grid-area: clock;
+    justify-self: start;
   }
 
   .row__poster {
@@ -372,6 +399,7 @@
   .row__ago {
     grid-area: ago;
     text-align: left;
+    justify-self: end;
     font-size: var(--text-2xs);
   }
 
@@ -538,16 +566,15 @@
      minmax rules further down the cascade, so repeat them here with the
      specificity to win — a single 358px-wide poster per row is a wall of
      art, not a schedule. */
-  .card-grid,
-  .skeleton-grid,
-  .day-group .card-grid,
-  #app .card-grid {
+  .skeleton-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--sp-4) var(--sp-3);
   }
 
+  /* A fixed 1.7rem could not know how long the figure is; the cell is a
+     size container, so the type asks the cell how much room it has. */
   .stat__value {
-    font-size: 1.7rem;
+    font-size: min(1.7rem, 11.8cqi);
   }
 
   .stat__label {
@@ -595,22 +622,13 @@
    the title always keeps a full line to itself.
    ============================================================ */
 @media (max-width: 760px) {
-  .section-head {
-    flex-wrap: wrap;
-    align-items: flex-start;
-    gap: var(--sp-3);
-  }
-
-  .section-head__left { flex: 1 1 100%; }
-
   .section-head__aside {
-    flex: 1 1 100%;
     align-items: center;
     justify-content: flex-start;
   }
 
   #section-title {
-    font-size: clamp(1.9rem, 9vw, 2.9rem);
+    font-size: clamp(1.9rem, 8.4vw, 2.9rem);
     max-width: none;
   }
 }

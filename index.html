@@ -110,149 +110,149 @@
   </noscript>
 
   <div class="app">
-    <aside class="sidebar" aria-label="Application">
-      <a class="brand" href="#upcoming" aria-label="Otaku Time — go to Upcoming">
-        <span class="brand__mark" aria-hidden="true">
-          <svg viewBox="0 0 32 32" focusable="false">
-            <circle cx="16" cy="16" r="12.5" fill="none" stroke="url(#ot-brand-gradient)" stroke-width="3" />
-            <path d="M13.6 11.7 21 16l-7.4 4.3z" fill="url(#ot-brand-gradient)" />
-          </svg>
+    <aside class="rail" aria-label="Application">
+      <a class="rail__brand" href="#upcoming" aria-label="Otaku Time — go to Upcoming">
+        <span class="rail__monogram" aria-hidden="true"></span>
+        <span class="rail__wordmark">
+          <span class="rail__word">Otaku</span>
+          <span class="rail__word">Time</span>
         </span>
-        <span class="brand__name">Otaku Time</span>
       </a>
+      <p class="rail__tagline" aria-hidden="true">Broadcast almanac</p>
 
+      <p class="rail__label">Index</p>
       <nav class="nav" aria-label="Sections">
         <span class="nav__indicator" aria-hidden="true"></span>
         <a class="nav__link" href="#upcoming" data-nav="upcoming">
-          <span>Upcoming</span>
+          <span class="nav__index" aria-hidden="true">01</span>
+          <span class="nav__text">Upcoming</span>
         </a>
         <a class="nav__link" href="#watchlist" data-nav="watchlist">
-          <span>Watchlist</span>
+          <span class="nav__index" aria-hidden="true">02</span>
+          <span class="nav__text">Watchlist</span>
           <span class="nav__count" data-nav-count hidden>0</span>
         </a>
         <a class="nav__link" href="#recent" data-nav="recent">
-          <span>Recently aired</span>
+          <span class="nav__index" aria-hidden="true">03</span>
+          <span class="nav__text">Recently aired</span>
         </a>
       </nav>
 
-      <div class="sidebar__footer">
-        <div class="sync js-sync" role="status" data-state="loading">
-          <span class="sync__dot" aria-hidden="true"></span>
-          <span class="sync__text">Loading</span>
-        </div>
-        <div class="sidebar__actions">
-          <button class="icon-btn js-palette-open" title="Command palette (Ctrl K)" aria-label="Open command palette">
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <rect x="3.5" y="4.5" width="17" height="15" rx="3"></rect>
-              <path d="M8 9.5h8M8 13h5"></path>
-            </svg>
-          </button>
-          <button class="icon-btn js-help-open" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">
+      <!-- The single search field lives here on desktop and in the top bar
+           below 1024px; app.js moves this one node between the two slots so
+           there is never a second input or a second source of truth. -->
+      <div class="rail__search" data-search-slot="rail">
+      <div class="search" role="search">
+        <svg class="search__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle cx="10.5" cy="10.5" r="6.5"></circle>
+          <path d="m16 16 4 4"></path>
+        </svg>
+        <label class="sr-only" for="search">Search anime</label>
+        <input id="search" type="search" autocomplete="off" spellcheck="false"
+          placeholder="Search the almanac" />
+        <kbd class="search__kbd" aria-hidden="true">/</kbd>
+        <button id="clear-search" class="search__clear" type="button" aria-label="Clear search" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="m7 7 10 10M17 7 7 17"></path>
+          </svg>
+        </button>
+      </div>
+      </div>
+
+      <div class="rail__clock">
+        <p class="mono-label">Local time — <span data-tz-name>UTC</span></p>
+        <time id="clock" class="rail__time">--:--:--</time>
+        <p id="clock-date" class="rail__date">—</p>
+        <label class="sr-only" for="rail-tz">Time zone</label>
+        <select id="rail-tz" class="rail__tz" data-tz-select data-native></select>
+      </div>
+
+      <div class="rail__controls">
+        <button class="rail__theme js-theme-toggle" type="button" aria-pressed="false">
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"></path>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M20 14.5A8.3 8.3 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z"></path>
+          </svg>
+          <span data-theme-label>Paper theme</span>
+        </button>
+        <div class="rail__tools">
+          <button class="icon-btn js-help-open" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <rect x="2.5" y="6.5" width="19" height="11" rx="2.5"></rect>
               <path d="M6.5 10h.01M10 10h.01M13.5 10h.01M17 10h.01M8 14h8"></path>
             </svg>
           </button>
-          <button class="icon-btn js-refresh" title="Refresh schedule" aria-label="Refresh schedule">
+          <button class="icon-btn js-refresh" type="button" title="Refresh schedule" aria-label="Refresh schedule">
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"></path>
               <path d="M19.8 4.8v4h-4"></path>
             </svg>
           </button>
-          <button class="icon-btn js-theme-toggle" title="Switch theme" aria-label="Switch theme">
-            <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <circle cx="12" cy="12" r="4"></circle>
-              <path
-                d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6">
-              </path>
-            </svg>
-            <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="M20 14.5A8.3 8.3 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z"></path>
-            </svg>
-          </button>
-          <button class="icon-btn js-settings-open" title="Settings" aria-label="Open settings">
+          <button class="icon-btn js-settings-open" type="button" title="Settings" aria-label="Open settings">
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <circle cx="12" cy="12" r="3.1"></circle>
-              <path
-                d="M19.4 14.6a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.55-1.1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1-1.56V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9c.24.63.85 1.05 1.53 1.07H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5.53z">
-              </path>
+              <path d="M19.4 14.6a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.55-1.1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1-1.56V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9c.24.63.85 1.05 1.53 1.07H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5.53z"></path>
             </svg>
           </button>
         </div>
+      </div>
+
+      <div class="rail__foot">
+        <div class="sync js-sync" role="status" data-state="loading">
+          <span class="sync__dot" aria-hidden="true"></span>
+          <span class="sync__text">Loading</span>
+        </div>
+        <p class="rail__privacy">
+          Local-first — data from AniList.co<br />
+          No accounts · no cookies · no tracks
+        </p>
       </div>
     </aside>
 
     <div class="main-column">
       <header class="topbar">
         <a class="topbar__brand" href="#upcoming" aria-label="Otaku Time — go to Upcoming">
-          <span class="brand__mark" aria-hidden="true">
-            <svg viewBox="0 0 32 32" focusable="false">
-              <circle cx="16" cy="16" r="12.5" fill="none" stroke="url(#ot-brand-gradient)" stroke-width="3" />
-              <path d="M13.6 11.7 21 16l-7.4 4.3z" fill="url(#ot-brand-gradient)" />
-            </svg>
-          </span>
-          <span class="topbar__brand-name">Otaku Time</span>
+          <span class="rail__monogram" aria-hidden="true"></span>
         </a>
 
-        <div class="search">
-          <svg class="search__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <circle cx="10.5" cy="10.5" r="6.5"></circle>
-            <path d="m16 16 4 4"></path>
-          </svg>
-          <label class="sr-only" for="search">Search anime</label>
-          <input id="search" type="search" autocomplete="off" spellcheck="false"
-            placeholder="Search anime, titles, synonyms…" />
-          <kbd class="search__kbd" aria-hidden="true">/</kbd>
-          <button id="clear-search" class="search__clear" aria-label="Clear search" hidden>
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="m7 7 10 10M17 7 7 17"></path>
-            </svg>
-          </button>
-        </div>
+        <time class="topbar__clock" data-clock="hm">--:--</time>
 
-        <div class="topbar__extras">
-          <div class="sync js-sync topbar__sync" role="status" data-state="loading">
-            <span class="sync__dot" aria-hidden="true"></span>
-            <span class="sync__text">Loading</span>
-          </div>
-          <div class="clock">
-            <time id="clock" class="clock__time">--:--:--</time>
-            <span id="clock-date" class="clock__date">—</span>
-          </div>
-          <button class="icon-btn topbar__action js-palette-open" title="Command palette (Ctrl K)"
-            aria-label="Open command palette">
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="m5 12 5 5L20 7"></path>
+        <div class="topbar__search" data-search-slot="bar"></div>
+
+        <div class="topbar__actions">
+          <button class="icon-btn js-search-toggle" type="button" title="Search" aria-label="Search the almanac"
+            aria-expanded="false" aria-controls="search">
+            <svg class="icon-search" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <circle cx="10.5" cy="10.5" r="6.5"></circle>
+              <path d="m16 16 4 4"></path>
+            </svg>
+            <svg class="icon-close" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="m5 5 14 14M19 5 5 19"></path>
             </svg>
           </button>
-          <button class="icon-btn topbar__action js-refresh" title="Refresh schedule"
-            aria-label="Refresh schedule">
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"></path>
-              <path d="M19.8 4.8v4h-4"></path>
-            </svg>
-          </button>
-          <button class="icon-btn topbar__action js-theme-toggle" title="Switch theme"
-            aria-label="Switch theme">
+          <button class="icon-btn js-theme-toggle" type="button" title="Switch theme" aria-label="Switch theme">
             <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <circle cx="12" cy="12" r="4"></circle>
-              <path
-                d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6">
-              </path>
+              <path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"></path>
             </svg>
             <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <path d="M20 14.5A8.3 8.3 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z"></path>
             </svg>
           </button>
-          <button class="icon-btn topbar__action js-settings-open" title="Settings"
-            aria-label="Open settings">
+          <button class="icon-btn js-settings-open" type="button" title="Settings" aria-label="Open settings">
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <circle cx="12" cy="12" r="3.1"></circle>
-              <path
-                d="M19.4 14.6a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.55-1.1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1-1.56V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9c.24.63.85 1.05 1.53 1.07H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5.53z">
-              </path>
+              <path d="M19.4 14.6a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.55-1.1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1-1.56V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9c.24.63.85 1.05 1.53 1.07H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5.53z"></path>
             </svg>
           </button>
+        </div>
+
+        <div class="sync js-sync topbar__sync" role="status" data-state="loading">
+          <span class="sync__dot" aria-hidden="true"></span>
+          <span class="sync__text">Loading</span>
         </div>
       </header>
       <section class="wire" id="wire" aria-label="Broadcast wire"></section>
@@ -285,12 +285,12 @@
       </main>
 
       <footer class="footer">
-        <span class="footer__brand">Otaku Time</span>
-        <span class="footer__meta">
-          Schedule data from
-          <a href="https://anilist.co" target="_blank" rel="noopener noreferrer">AniList&nbsp;↗</a>
-          · Your data stays in this browser
-        </span>
+        <p class="footer__colophon" aria-hidden="true">Otaku Time</p>
+        <p class="footer__meta">
+          A local-first broadcast almanac · <span data-colophon-vol>Vol. 2026 — Issue 01</span> ·
+          Schedule data — <a href="https://anilist.co" target="_blank" rel="noopener noreferrer">AniList.co</a>
+          (fan project, not affiliated) · Your data never leaves this browser
+        </p>
       </footer>
     </div>
   </div>

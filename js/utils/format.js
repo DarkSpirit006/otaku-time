@@ -73,3 +73,17 @@ export function cleanDescription(html) {
 export function genreLine(genres) {
   return Array.isArray(genres) && genres.length ? genres.join(" · ") : "";
 }
+
+/**
+ * Human-scale watch time: `18h 40m`, `2h`, `45m`.
+ *
+ * The shelf adds up episode runtimes, which are minutes, and a raw minute
+ * count ("1120") is a number nobody reads as time.
+ */
+export function durationLabel(minutes) {
+  const total = Math.round(Number(minutes) || 0);
+  if (total < 60) return `${total}m`;
+  const hours = Math.floor(total / 60);
+  const rest = total % 60;
+  return rest ? `${hours}h ${rest}m` : `${hours}h`;
+}

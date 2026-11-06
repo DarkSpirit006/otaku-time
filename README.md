@@ -63,8 +63,8 @@ Pick your time zone in **Settings** and start saving shows.
 ## Testing
 
 ```bash
-npm test               # 178 unit tests — node:test, zero runtime dependencies
-npm run test:e2e       # 122 Playwright tests
+npm test               # 223 unit tests — node:test, zero runtime dependencies
+npm run test:e2e       # 194 Playwright tests
 npm run screenshots    # refresh docs/screenshots + social card + demo GIF
 ```
 
@@ -72,18 +72,25 @@ The suites are deterministic and run offline: every AniList call is intercepted 
 
 | Suite | Covers |
 | --- | --- |
-| `tests/unit/` (216) | time zones, countdowns, ICS generation, search ranking, response normalisation, the API client (cache, dedupe, retries, rate limits, cancellation), storage (migrations v1→v3, corruption, quota, import/export validation), schedule state machine, progress caps, the service worker (cache ownership, opaque artwork, routing), the install-prompt state machine, detail-dialog fact and link rules, the broadcast-wire derivation |
-| `tests/e2e/app.spec.js` (31) | the three sections, search, detail, watchlist flows, deep links, palette, shortcuts, calendar, install offers, plus per-bug regressions |
+| `tests/unit/` (223) | time zones, countdowns, ICS generation, search ranking, response normalisation, the API client (cache, dedupe, retries, rate limits, cancellation), storage (migrations v1→v3, corruption, quota, import/export validation), schedule state machine, progress caps, the service worker (cache ownership, opaque artwork, routing), the install-prompt state machine, detail-dialog fact and link rules, the broadcast-wire derivation |
+| `tests/e2e/app.spec.js` (41) | the three sections, search, detail, watchlist flows, deep links, palette, shortcuts, calendar, install offers, plus per-bug regressions |
 | `tests/e2e/edge-cases.spec.js` (16) | API failures, rate limits, storage hazards, multi-tab sync, reduced motion, offline, infinite scroll, data portability |
 | `tests/e2e/a11y.spec.js` (41) | axe-core on every primary view and dialog, in both themes, at three widths — zero serious or critical violations |
 | `tests/e2e/visual.spec.js` (32) | three sections × dark/light × 360/768/1440, plus detail and search — reviewed by eye, not auto-accepted |
 | `tests/e2e/offline.spec.js` (8) | the real service worker: cold start with no network, manifest and icons, deep links after reload, cache ownership on a shared origin, posters cached and decoded offline |
 | `tests/e2e/pagination.spec.js` (5) | loaded-count copy while pages remain, and the "full window" claim only once AniList runs out |
 | `tests/e2e/wire.spec.js` (10) | the broadcast wire and split masthead: screen-reader shape, reduced motion, no horizontal overflow, one H1 per section |
+| `tests/e2e/sweep.spec.js` (41) | the delivery matrix: every section at 360/768/1440 in both themes with no overflow, console errors or CSP violations; one navigation shell; reduced motion; back/forward; theme persistence; manual order by keyboard; direct episode edit; and a boot from a GitHub-Pages-style subpath |
 
 `npm run check:assets` verifies the other half of the offline promise: every path in the service worker's precache list exists, every module reachable from the entry points is precached, and every `url()` in every stylesheet resolves. It runs in CI's unit job and takes about 150 ms.
 
 Every fixed bug landed with a regression test that failed first. Two examples worth keeping in mind: the countdown ticker used to wipe the air time out of every card one second after load, and "aired earlier today" rows declared four grid tracks for five children, so a 54px thumbnail rendered 640px wide.
+
+## Recreating the reference
+
+`docs/PORT-REPORT.md` documents the visual port from `otaku-time-example`: what was matched, what
+was deliberately kept from production, the defects the side-by-side comparison uncovered, and the
+verification matrix that was actually run.
 
 ## Performance
 

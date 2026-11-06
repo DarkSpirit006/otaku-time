@@ -4,7 +4,7 @@
    the notification check. All consumers read fresh prefs.
    ============================================================ */
 
-import { clockText, longDate, countdown } from "../utils/time.js";
+import { clockText, compactDate, countdown, countdownParts } from "../utils/time.js";
 import { qsa } from "../utils/dom.js";
 import { getPrefs } from "./prefs.js";
 
@@ -17,13 +17,34 @@ let onTick = () => {};
 function updateClock(now) {
   const prefs = getPrefs();
   const time = clockText(now, prefs.timezone, prefs.hour12);
-  const date = longDate(now, prefs.timezone);
+  const date = compactDate(now, prefs.timezone);
   for (const el of qsa("#clock")) el.textContent = time;
   for (const el of qsa("#clock-date")) el.textContent = date;
+  // Compact readouts (the phone top bar) drop the seconds: the full
+  // clock is one line below in the rail on desktop and there is no room
+  // for a ticking second counter beside the search button.
+  for (const el of qsa("[data-clock]")) {
+    const next = el.dataset.clock === "hm" ? time.replace(/:\d{2}(\s?[AP]M)?$/i, "$1") : time;
+    if (el.textContent !== next) el.textContent = next;
+  }
 }
 
 function updateCountdowns(now) {
   const nowSeconds = now.getTime() / 1000;
+
+  // Segmented plate (feature panel): each cell is its own node so the
+  // numerals can be set in the display face with a colon between them.
+  for (const el of qsa("[data-countdown-segments]")) {
+    const epoch = Number(el.dataset.epoch);
+    const parts = countdownParts(epoch, nowSeconds);
+    for (const cell of el.querySelectorAll("[data-seg]")) {
+      const key = cell.dataset.seg;
+      if (!(key in parts)) continue;
+      const next = String(parts[key]);
+      if (cell.textContent !== next) cell.textContent = next;
+    }
+  }
+
   for (const el of qsa("[data-countdown]")) {
     const epoch = Number(el.dataset.epoch);
     const duration = el.dataset.duration ? Number(el.dataset.duration) : 0;

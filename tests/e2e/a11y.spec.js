@@ -17,6 +17,7 @@ import {
   detailsPayload,
   searchPayload,
   seedWatchlist,
+  typeSearch,
 } from "./helpers.js";
 
 const RULES = {
@@ -159,7 +160,7 @@ for (const theme of ["dark", "light"]) {
 
       test("search results", async ({ page }) => {
         await boot(page, { theme });
-        await page.fill("#search", "aot");
+        await typeSearch(page, "aot");
         await expect(page.locator("#section-title")).toHaveText("Results");
         await expect(page.locator(".card").first()).toBeVisible();
         await scan(page, `${theme}/${name} search`);

@@ -6,12 +6,12 @@
 /* ---------- Section masthead ---------- */
 
 .section-head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
   gap: var(--sp-5);
-  margin-bottom: var(--sp-7);
-  padding-bottom: var(--sp-4);
+  margin-bottom: 0;
+  padding-bottom: var(--sp-3);
   border-bottom: var(--hair) solid var(--border-strong);
 }
 
@@ -22,164 +22,251 @@
   min-width: 0;
 }
 
+/* The filing line: Sec.01 / what the column holds */
 .section-head__eyebrow {
   display: flex;
-  align-items: center;
-  gap: var(--sp-2);
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 8px;
+  margin-top: 14px;
+  color: var(--text-faint);
+}
+
+.section-head__sec {
   color: var(--accent-text);
 }
 
-.section-head__eyebrow::before {
-  content: "";
-  width: 18px;
-  height: var(--hair);
-  background: var(--accent);
+.section-head__slash {
+  color: var(--text-faint);
 }
 
 #section-title {
   font-size: var(--text-masthead);
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: -0.035em;
-  line-height: 0.86;
-  /* Editorial balance: two-word titles set slightly smaller so the
-     second line never collides with the meta rule beneath it. */
-  max-width: 18ch;
+  letter-spacing: -0.03em;
+  line-height: 0.88;
+  /* Fits at 320px without clipping; the tail word is outlined, so a
+     mid-word break would be unreadable rather than merely awkward. */
+  overflow-wrap: normal;
+  hyphens: none;
 }
 
 .section-head__meta {
-  font-size: var(--text-xs);
-  letter-spacing: 0.12em;
+  color: var(--text-faint);
 }
 
 .section-head__aside {
   display: flex;
   align-items: flex-end;
-  gap: var(--sp-3);
+  gap: var(--sp-2);
+  padding-bottom: 2px;
 }
 
-/* ---------- Feature (spotlight) ---------- */
+/* The filing line above the feature plate */
+.feature-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin: var(--sp-4) 0 10px;
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent-text);
+}
+
+.feature-label__hint {
+  color: var(--text-faint);
+}
+
+/* ---------- Feature plate (spotlight) ----------
+   One cinematic panel, not a card: the artwork is a background plate
+   behind a paper veil, and the type sits on paper at the left. The veil
+   is what keeps the headline legible over arbitrary frames. */
 
 .spotlight {
+  --hero-art: 0.5;
   position: relative;
+  isolation: isolate;
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-  align-items: stretch;
-  min-height: clamp(360px, 46vw, 520px);
-  margin-bottom: clamp(var(--sp-8), 6vw, var(--sp-10));
-  border-top: var(--hair) solid var(--border-strong);
-  border-bottom: var(--hair) solid var(--border-strong);
+  align-content: end;
+  min-height: clamp(320px, 44vw, 430px);
+  margin-bottom: clamp(var(--sp-7), 5vw, var(--sp-9));
+  padding: clamp(var(--sp-5), 3vw, var(--sp-8));
+  border: var(--hair) solid var(--border);
   overflow: hidden;
+}
+
+[data-theme="light"] .spotlight {
+  --hero-art: 0.4;
+}
+
+[data-theme="light"] .spotlight__media img {
+  filter: saturate(0.45) brightness(1.06) contrast(0.96);
 }
 
 .spotlight__media {
-  position: relative;
-  order: 2;
-  min-height: 0;
-  margin: calc(var(--sp-4) * -1) calc(var(--content-pad) * -1) calc(var(--sp-4) * -1) 0;
-}
-
-.spotlight__poster {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  min-height: 320px;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   overflow: hidden;
-  background: var(--surface-3);
-  border-left: var(--hair) solid var(--border);
-  border-bottom: var(--hair) solid var(--border);
+  background: var(--paper-2);
 }
 
-.spotlight__poster img {
+.spotlight__media img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 22%;
+  object-position: 62% 18%;
+  opacity: var(--hero-art);
+  /* Keep the panel in the almanac's key whatever the frame's own
+     exposure: a bright daylight banner would otherwise flood the page. */
+  filter: saturate(0.6) brightness(0.62) contrast(1.08);
   transform: scale(1.02);
-  animation: spotlight-in 1.2s var(--ease-out) both;
 }
 
-/* The feature image is the largest thing on screen: it must paint the
-   moment it decodes. A transform settle still reads as arrival; holding
-   it at opacity 0 for a second only delays what people came to see. */
-@keyframes spotlight-in {
-  from {
-    transform: scale(1.09);
-  }
-  to {
-    transform: scale(1.02);
-  }
-}
-
-/* No blur-up on the hero: it is the LCP element. */
-.spotlight__poster img[data-blur-up] {
-  filter: none;
-  opacity: 1;
-}
-
-/* The scrim has to sit above the artwork: the poster is a direct child
-   with z-index 1, so an auto-stacked ::after painted behind it and the
-   fade never existed. */
-.spotlight__poster::after {
-  content: "";
+/* The veil: solid paper on the left third (where the type lives), a
+   dominant-colour glow at the top right, and a hard fade to paper at the
+   bottom so the panel merges into the column. */
+.spotlight__veil {
   position: absolute;
   inset: 0;
-  z-index: 2;
-  background: linear-gradient(
-    90deg,
-    var(--paper) 0%,
-    color-mix(in srgb, var(--paper) 72%, transparent) 18%,
-    color-mix(in srgb, var(--paper) 18%, transparent) 46%,
-    transparent 70%
-  );
-  pointer-events: none;
+  background:
+    radial-gradient(90% 70% at 82% 6%, color-mix(in srgb, var(--tint, var(--accent)) 34%, transparent), transparent 62%),
+    linear-gradient(94deg, var(--paper) 0%, color-mix(in srgb, var(--paper) 88%, transparent) 34%, color-mix(in srgb, var(--paper) 18%, transparent) 76%),
+    linear-gradient(180deg, transparent 40%, color-mix(in srgb, var(--paper) 82%, transparent) 88%, var(--paper) 100%);
 }
 
-.spotlight__poster button {
+.spotlight__plate {
   position: absolute;
   inset: 0;
-  z-index: 2;
-  cursor: pointer;
+  z-index: -1;
+  background:
+    radial-gradient(70% 90% at 88% 10%, color-mix(in srgb, var(--tint, var(--accent)) 22%, transparent), transparent 65%),
+    var(--paper-2);
 }
 
 .spotlight__content {
   position: relative;
-  z-index: 3;
-  order: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: var(--sp-4);
-  padding: clamp(var(--sp-6), 4vw, var(--sp-9)) 0;
-  max-width: 620px;
+  align-items: flex-start;
+  gap: 0;
+  max-width: 46rem;
 }
 
 .spotlight__label {
-  display: inline-flex;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--sp-2);
-  color: var(--accent-text);
+  gap: 10px;
+  margin-bottom: 18px;
 }
 
-.spotlight__label::before {
+.spotlight__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 9px;
+  border: var(--hair) solid color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  color: var(--accent-text);
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.spotlight__chip::before {
   content: "";
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
   background: var(--accent);
-  animation: sync-pulse 1.6s var(--ease-in-out) infinite;
+  animation: live-dot 2.4s var(--ease-in-out) infinite;
+}
+
+@keyframes live-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.spotlight__stamp {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* Segmented countdown plate */
+.spotlight__count {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0 0 14px -2px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(2.3rem, 6.4vw, 4rem);
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.spotlight__count-label {
+  align-self: flex-end;
+  margin-right: 2px;
+  padding-bottom: 1.1em;
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  color: var(--text-faint);
+}
+
+.spotlight__cell {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.spotlight__seg {
+  min-width: 2ch;
+  text-align: center;
+}
+
+.spotlight__unit {
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.spotlight__colon {
+  color: var(--accent);
+  font-size: 0.62em;
+  transform: translateY(-0.12em);
 }
 
 .spotlight__title {
-  font-size: var(--text-hero);
+  margin: 0 0 10px;
+  font-size: clamp(2.1rem, 5.4vw, 3.6rem);
   font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: -0.04em;
-  line-height: 0.9;
-  max-width: 18ch;
+  line-height: 0.92;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
 }
 
 .spotlight__title button {
   text-align: left;
+  color: inherit;
   transition: color var(--dur-fast) linear;
 }
 
@@ -190,54 +277,60 @@
 .spotlight__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sp-1-5);
-}
-
-.spotlight__countdown {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--sp-3);
-  padding: var(--sp-3) 0;
-  border-top: var(--hair) solid var(--border);
-  border-bottom: var(--hair) solid var(--border);
-}
-
-.spotlight__countdown-value {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: clamp(1.6rem, 1rem + 2.2vw, 2.6rem);
-  letter-spacing: -0.02em;
-  line-height: 1;
-  color: var(--accent-text);
-}
-
-.spotlight__countdown-time {
+  align-items: center;
+  gap: 0 12px;
+  margin-bottom: 22px;
   font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  letter-spacing: 0.08em;
-  color: var(--text-faint);
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.spotlight__score {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--gold-text);
+}
+
+.spotlight__score svg {
+  width: 11px;
+  height: 11px;
+  fill: currentColor;
 }
 
 .spotlight__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sp-2);
+  gap: 8px;
+}
+
+.spotlight__actions .btn {
+  min-height: 40px;
+}
+
+/* Vertical filing mark down the right edge */
+.spotlight__rail {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  writing-mode: vertical-rl;
+  transform: translateY(-50%);
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  pointer-events: none;
 }
 
 /* ---------- Lineup grid ---------- */
 
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
-  gap: var(--sp-6) var(--sp-3-5);
-}
-
-/* Lineup stays a clean, dense rhythm — no orphan cells, no span tricks */
-@media (min-width: 861px) {
-  .day-group .card-grid {
-    grid-template-columns: repeat(auto-fill, minmax(184px, 1fr));
-  }
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 8px;
 }
 
 /* ============================================================
@@ -247,30 +340,27 @@
 .lead-strip {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--sp-3-5);
-  margin-bottom: var(--sp-6);
+  gap: 10px;
+  margin-bottom: var(--sp-5);
 }
 
+/* One lead per day: the day's first broadcast gets a cinematic panel,
+   the rest fall back to the compact printed entries below. */
 .lead-strip--multi {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .lead-panel {
   position: relative;
+  isolation: isolate;
   display: grid;
-  grid-template-columns: clamp(96px, 15%, 148px) minmax(0, 1fr);
-  gap: var(--sp-4);
-  align-items: stretch;
-  padding: var(--sp-3);
+  align-content: end;
+  min-height: 168px;
+  padding: 16px 18px;
   border: var(--hair) solid var(--border);
-  background: linear-gradient(
-    100deg,
-    color-mix(in srgb, var(--text) 3.5%, transparent),
-    transparent 62%
-  );
-  transition:
-    border-color var(--dur-base) linear,
-    background-color var(--dur-base) linear;
+  background: var(--paper-2);
+  overflow: hidden;
+  transition: border-color var(--dur-base) linear;
 }
 
 .lead-panel:hover {
@@ -284,22 +374,39 @@
 }
 
 .lead-panel__media {
-  position: relative;
-  aspect-ratio: 2 / 3;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   overflow: hidden;
-  background: var(--surface-3);
-  border: var(--hair) solid var(--border);
 }
 
 .lead-panel__media img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: 72% 34%;
+  opacity: 0.34;
+  filter: saturate(0.55) brightness(0.66) contrast(1.06);
   transition: transform var(--dur-slow) var(--ease-out);
 }
 
+[data-theme="light"] .lead-panel__media img {
+  opacity: 0.32;
+  filter: saturate(0.4) brightness(1.05) contrast(0.95);
+}
+
 .lead-panel:hover .lead-panel__media img {
-  transform: scale(1.05);
+  transform: scale(1.03);
+}
+
+.lead-panel__media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(80% 90% at 92% 4%, color-mix(in srgb, var(--tint, var(--accent)) 26%, transparent), transparent 62%),
+    linear-gradient(94deg, var(--paper) 10%, color-mix(in srgb, var(--paper) 78%, transparent) 46%, transparent 88%),
+    linear-gradient(0deg, var(--paper) 0%, transparent 70%);
 }
 
 .lead-panel__fallback {
@@ -314,22 +421,20 @@
 
 .lead-panel__index {
   position: absolute;
-  left: 0;
-  bottom: 0;
+  top: 12px;
+  left: 18px;
   z-index: 2;
-  padding: 2px 6px;
-  background: var(--accent);
-  color: var(--accent-ink);
   font-family: var(--font-mono);
-  font-size: var(--text-2xs);
-  letter-spacing: 0.06em;
+  font-size: 0.52rem;
+  letter-spacing: 0.14em;
+  color: var(--accent-text);
   pointer-events: none;
 }
 
 .lead-panel__save {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: 10px;
+  right: 10px;
   z-index: 3;
   width: 26px;
   height: 26px;
@@ -344,22 +449,23 @@
 }
 
 .lead-panel__body {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--sp-1-5);
+  gap: 6px;
+  max-width: 34rem;
   min-width: 0;
-  padding: var(--sp-1) var(--sp-1) var(--sp-1) 0;
 }
 
 .lead-panel__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-2);
   font-family: var(--font-mono);
-  font-size: var(--text-2xs);
-  letter-spacing: 0.1em;
+  font-size: 0.52rem;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-faint);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .lead-panel__ep {
@@ -368,14 +474,14 @@
 
 .lead-panel__title {
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  margin-top: auto;
-  font-size: clamp(1.02rem, 0.7rem + 0.7vw, 1.34rem);
-  font-weight: 700;
-  line-height: 1.08;
-  letter-spacing: -0.02em;
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 2.4vw, 1.95rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.025em;
   text-transform: uppercase;
   transition: color var(--dur-fast) linear;
 }
@@ -388,13 +494,11 @@
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: var(--sp-2);
-  margin-top: var(--sp-1);
-  padding-top: var(--sp-2);
-  border-top: var(--hair) dashed var(--border);
+  gap: 10px;
   font-family: var(--font-mono);
-  font-size: var(--text-2xs);
-  letter-spacing: 0.06em;
+  font-size: 0.55rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: var(--accent-text);
 }
 
@@ -409,13 +513,13 @@
 }
 
 @media (max-width: 640px) {
-  .lead-strip--multi {
-    grid-template-columns: minmax(0, 1fr);
+  .lead-panel {
+    min-height: 150px;
+    padding: 14px;
   }
 
-  .lead-panel {
-    grid-template-columns: 88px minmax(0, 1fr);
-    gap: var(--sp-3);
+  .lead-panel__index {
+    left: 14px;
   }
 }
 
@@ -425,11 +529,21 @@
 }
 
 .today-past__label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
   margin-bottom: var(--sp-2);
+  padding-bottom: 6px;
+  border-bottom: var(--hair) solid var(--border);
   font-family: var(--font-mono);
-  font-size: var(--text-2xs);
-  letter-spacing: 0.16em;
+  font-size: 0.55rem;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.today-past__count {
   color: var(--text-faint);
 }
 
@@ -437,7 +551,7 @@
    4.5:1; instead the thumbnail loses colour and the title steps back a
    tier, which reads just as secondary and stays legible. */
 .today-past .row__poster img {
-  filter: saturate(0.45) brightness(0.82);
+  filter: saturate(0.45) brightness(0.85);
   transition: filter var(--dur-base) linear;
 }
 
@@ -463,18 +577,18 @@
    one column left: the 54px poster landed in the 1fr track and rendered
    hundreds of pixels wide. */
 .today-past .row {
-  grid-template-columns: 52px 40px minmax(0, 1fr) auto auto;
-  gap: var(--sp-3);
-  padding: var(--sp-2-5) 0;
+  grid-template-columns: 4.5rem 2rem minmax(0, 1fr) auto auto;
+  gap: 14px;
+  padding: 7px 0;
 }
 
 .today-past .row__poster {
-  width: 40px;
+  width: 2rem;
 }
 
 
 .today-past .row__meta {
-  font-size: 0.74rem;
+  font-size: 0.5rem;
 }
 
 /* Rows already aired today don't need the time or Details clutter */
@@ -482,56 +596,17 @@
   display: none;
 }
 
-/* Spotlight fallback: typographic poster plate when AniList has no art */
-.spotlight__poster-fallback {
+/* The feature plate's own fallback: a printed field in the show's colour
+   when the banner is missing or fails to decode. */
+.spotlight__plate {
   position: absolute;
   inset: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: var(--sp-6);
-  z-index: 0;
+  z-index: -1;
   background:
     repeating-linear-gradient(
       -45deg,
       transparent 0 7px,
       color-mix(in srgb, var(--tint, var(--border)) 9%, transparent) 7px 8px
     ),
-    linear-gradient(150deg, color-mix(in srgb, var(--tint, #333) 34%, var(--paper)), var(--paper) 78%);
-}
-
-.spotlight__poster-mark {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: clamp(3rem, 9vw, 7rem);
-  line-height: 0.85;
-  letter-spacing: -0.04em;
-  color: color-mix(in srgb, var(--tint, var(--text)) 62%, transparent);
-}
-
-.spotlight__poster-title {
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--text);
-  max-width: 24ch;
-  position: relative;
-  z-index: 3;
-  opacity: 0.9;
-}
-
-.spotlight__poster > .card__poster {
-  position: relative;
-  z-index: 1;
-}
-
-.spotlight .spotlight__poster::after {
-  background: linear-gradient(
-    90deg,
-    var(--paper) 0%,
-    color-mix(in srgb, var(--paper) 70%, transparent) 20%,
-    color-mix(in srgb, var(--paper) 10%, transparent) 52%,
-    transparent 100%
-  );
+    linear-gradient(150deg, color-mix(in srgb, var(--tint, #333) 26%, var(--paper)), var(--paper) 78%);
 }

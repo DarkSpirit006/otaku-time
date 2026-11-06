@@ -6,12 +6,14 @@
    grouping and manual order.
    ============================================================ */
 
-import { watchlist, LIST_STATUSES, LIST_STATUS_LABELS } from "../../storage/watchlist.js";
+import { watchlist, LIST_STATUSES, LIST_STATUS_LABELS, progressCap } from "../../storage/watchlist.js";
 import { watchlistCard } from "../../components/card.js";
 import { emptyState, notice, sectionHead } from "../../components/states.js";
 import { airingState, episodesBehind, progressPercent } from "../../utils/media-state.js";
 import { esc } from "../../utils/dom.js";
 import { icon } from "../../components/icons.js";
+import { showToast } from "../../components/toast.js";
+import { durationLabel } from "../../utils/format.js";
 
 const SORTS = {
   added: { label: "Recently added", compare: (a, b) => b.createdAt - a.createdAt },
@@ -50,19 +52,32 @@ export const state = {
 
 /* ------------------------------------------------------------ */
 
+/**
+ * Four printed columns: titles, episodes logged, time spent, shows behind.
+ *
+ * Summing "episodes behind" across the shelf produced numbers that looked
+ * authoritative and were not: a title whose episode count AniList has not
+ * published has no reliable ceiling, so 87 + 156 + 6 read as "249 behind"
+ * for a shelf of three shows that air weekly. Behindness is a per-show
+ * fact here, so the column counts shows — and says so.
+ */
 function statsBlock(items) {
   const total = items.length;
-  const completed = items.filter((item) => item.listStatus === "completed").length;
-  const watching = items.filter((item) => item.listStatus === "watching").length;
   const episodes = items.reduce((sum, item) => sum + (Number.isInteger(item.watched) ? item.watched : 0), 0);
-  const behind = items.reduce((sum, item) => sum + (episodesBehind(item) || 0), 0);
+  const behind = items.filter((item) => (episodesBehind(item) || 0) > 0).length;
+
+  // Time spent only counts what we can price: hours × watched episodes.
+  const minutes = items.reduce((sum, item) => {
+    const watched = Number.isInteger(item.watched) ? item.watched : 0;
+    const duration = Number(item.duration);
+    return sum + (watched > 0 && Number.isFinite(duration) && duration > 0 ? watched * duration : 0);
+  }, 0);
 
   const stats = [
     { value: total, label: "Titles" },
-    { value: watching, label: "Watching" },
-    { value: completed, label: "Completed" },
-    { value: episodes, label: "Episodes watched" },
-    { value: behind, label: "Episodes behind" },
+    { value: episodes, label: "Episodes logged" },
+    { value: minutes > 0 ? durationLabel(minutes) : "—", label: "Time spent" },
+    { value: behind, label: "Behind schedule" },
   ];
 
   return `<div class="stats" role="list" aria-label="Watchlist statistics">
@@ -214,13 +229,13 @@ export function render(ctx) {
   const all = watchlist.all().slice();
 
   const head = sectionHead({
-    eyebrow: "Your library",
+    index: "02",
     title: "Watch",
     tail: "list",
     meta: all.length
       ? `${all.length} title${all.length === 1 ? "" : "s"} · stored in this browser only`
       : "",
-    aside: "",
+    aside: `<button class="btn btn--ghost btn--sm" type="button" data-action="add-titles">+ Add titles</button>`,
   });
 
   if (watchlist.isCorrupt()) {
@@ -334,7 +349,50 @@ export function handleAction(name, el, ctx) {
 }
 
 /** Select and input filters inside the section. */
+/**
+ * The episode field on a saved card. Typing a number and pressing Enter (or
+ * leaving the field) commits it — the field exists precisely so a viewer can
+ * jump to episode 9 instead of tapping +1 nine times.
+ *
+ * Returns false when the field is not a progress input, so the caller can
+ * carry on with the filter selects.
+ */
+function commitProgress(input, ctx) {
+  const id = Number(input.dataset.id);
+  const item = watchlist.find(id);
+  if (!item) return false;
+
+  const typed = Number.parseInt(input.value, 10);
+  if (!Number.isFinite(typed)) {
+    // Garbage in the field is not a command: restore what is stored.
+    input.value = String(item.watched);
+    return true;
+  }
+
+  if (watchlist.setWatched(id, typed)) {
+    const stored = watchlist.find(id);
+    const { cap, source } = progressCap(stored);
+    // The input is not repainted until the section re-renders, so it has to
+    // be corrected here or it keeps showing the number the store rejected.
+    input.value = String(stored.watched);
+    if (typed > cap) {
+      showToast(
+        source === "aired"
+          ? `Progress capped at episode ${cap} — AniList hasn't published a total yet.`
+          : `Progress capped at episode ${cap}.`
+      );
+    }
+    ctx.render();
+  }
+  return true;
+}
+
 export function handleChange(event, ctx) {
+  const progress = event.target.closest("[data-progress-input]");
+  if (progress) {
+    if (commitProgress(progress, ctx)) return true;
+  }
+
   const field = event.target.closest("[data-filter]");
   if (!field) return false;
   const key = field.dataset.filter;

@@ -81,6 +81,10 @@ export function syncTrigger(state) {
 function enhance(select) {
   if (enhanced.has(select)) return null;
   if (!select.id) return null;
+  // Compact utility selects (the rail's time zone) are left native: their
+  // value changes from outside the component, and a native control keeps
+  // the system picker on touch.
+  if (select.hasAttribute("data-native")) return null;
 
   const wrapper = document.createElement("div");
   wrapper.className = "select";

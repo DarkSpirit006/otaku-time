@@ -31,7 +31,7 @@ export function render(ctx) {
     page: state.page,
   });
   const head = sectionHead({
-    eyebrow: "Schedule",
+    index: "03",
     title: "Recently",
     tail: " aired",
     meta: state.syncedAt
@@ -79,6 +79,18 @@ export function render(ctx) {
   }
   const ordered = Array.from(groups.entries()).sort(([a], [b]) => b.localeCompare(a));
 
+  /* The rundown is three named parts — today, yesterday, then everything
+     else as an archive — not a flat list of days. */
+  const todayKey = dayKey(Date.now(), prefs.timezone);
+  const yesterdayKey = dayKey(Date.now() - 86400000, prefs.timezone);
+  const sectionFor = (key) =>
+    key === todayKey ? "today" : key === yesterdayKey ? "yesterday" : "annals";
+  const SECTION_META = {
+    today: { mark: "R.01", heading: "Today" },
+    yesterday: { mark: "R.02", heading: "Yesterday" },
+    annals: { mark: "R.03", heading: "The annals" },
+  };
+
   const html = ordered
     .map(([key, list], groupIndex) => {
       const label = dayLabel(list[0].airingAt * 1000, prefs.timezone);
@@ -97,9 +109,16 @@ export function render(ctx) {
           timelineRow(event, prefs, { index, lede: lede && index === 0 })
         )
         .join("");
+      const partName = sectionFor(key);
+      const part = SECTION_META[partName];
+      const first = groupIndex === 0 || partName !== sectionFor(ordered[groupIndex - 1][0]);
       return dayGroup({
         key,
-        label,
+        // Inside the archive each day keeps its own dated sub-rule, so the
+        // rundown never turns into one undated stream.
+        compact: partName === "annals" && !first,
+        label: first ? part.heading : label,
+        mark: first ? part.mark : "",
         relative,
         count: list.length,
         content: `<div class="timeline__list">${rows}</div>`,

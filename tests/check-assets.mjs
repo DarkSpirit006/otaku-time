@@ -140,8 +140,12 @@ while (cssQueue.length) {
     continue;
   }
   const source = read(sheet);
-  for (const match of source.matchAll(/url\(\s*['"]?([^'")]+)['"]?\s*\)/g)) {
-    const value = match[1].trim();
+  // Quote-aware: an inline SVG data URI can itself contain url(#filter),
+  // and a naive pattern reads that inner fragment as a file reference.
+  // Matching the whole quoted value keeps it intact, so the data: skip
+  // below actually sees it.
+  for (const match of source.matchAll(/url\(\s*(?:'([^']*)'|"([^"]*)"|([^)'"]+))\s*\)/g)) {
+    const value = (match[1] ?? match[2] ?? match[3] ?? "").trim();
     if (!value || value.startsWith("data:") || value.startsWith("http") || value.startsWith("#")) continue;
     const target = resolve(dirname(join(ROOT, sheet)), value.split(/[?#]/)[0]);
     const path = rel(target);

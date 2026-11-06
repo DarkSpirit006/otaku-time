@@ -35,20 +35,24 @@ export function notice(text, kind = "danger") {
 }
 
 /**
- * Section heading: eyebrow + h1 + meta on the left, optional
- * * aside (extra controls) on the right.
+ * Section masthead: oversized title, then the printed filing line
+ * (`Sec.01 / metadata`) beneath it, with optional controls on the right.
+ *
+ * `tail` is rendered as outlined type — the quiet second half of the
+ * masthead. It joins the title with no whitespace, so the heading's
+ * accessible name stays exactly the section name ("Upcoming") instead of
+ * becoming "Up coming"; a tail that starts a new word carries its own
+ * leading space.
  */
-export function sectionHead({ eyebrow, title, meta = "", aside = "", tail = "" }) {
-  // `tail` is rendered as outlined type — a quiet second half of the
-  // masthead. It joins the title with no whitespace, so the heading's
-  // accessible name stays exactly the section name ("Upcoming") instead
-  // of becoming "Up coming"; a tail that starts a new word carries its
-  // own leading space.
+export function sectionHead({ index = "", eyebrow = "", title, meta = "", aside = "", tail = "" }) {
+  const sec = index ? `<span class="section-head__sec">Sec.${esc(index)}</span><span class="section-head__slash" aria-hidden="true">/</span>` : "";
+  const metaLine = meta || eyebrow
+    ? `<p class="section-head__eyebrow">${sec}${meta ? `<span class="section-head__meta" id="section-meta">${meta}</span>` : esc(eyebrow)}</p>`
+    : "";
   return `<header class="section-head">
     <div class="section-head__left">
-      <p class="section-head__eyebrow">${esc(eyebrow)}</p>
       <h1 id="section-title">${esc(title)}${tail ? `<span class="section-head__tail">${esc(tail)}</span>` : ""}</h1>
-      <p class="section-head__meta" id="section-meta">${meta}</p>
+      ${metaLine}
     </div>
     ${aside ? `<div class="section-head__aside">${aside}</div>` : ""}
   </header>`;

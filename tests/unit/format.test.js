@@ -7,6 +7,7 @@ import {
   statusLabel,
   cleanDescription,
   genreLine,
+  durationLabel,
 } from "../../js/utils/format.js";
 
 test("titleOf prefers english, then romaji, then native", () => {
@@ -54,4 +55,21 @@ test("genreLine joins genres safely", () => {
   assert.equal(genreLine([]), "");
   assert.equal(genreLine(undefined), "");
   assert.equal(genreLine(["solo"]), "solo");
+});
+
+/* ------------------------------------------------------------
+   Watch time on the shelf
+   ------------------------------------------------------------ */
+
+test("durationLabel reads as time, not as a minute count", () => {
+  assert.equal(durationLabel(45), "45m");
+  assert.equal(durationLabel(60), "1h");
+  assert.equal(durationLabel(1120), "18h 40m");
+  assert.equal(durationLabel(0), "0m");
+  assert.equal(durationLabel(null), "0m");
+});
+
+test("durationLabel rounds fractional minutes instead of printing them raw", () => {
+  assert.equal(durationLabel(59.6), "1h");
+  assert.equal(durationLabel(90.4), "1h 30m");
 });

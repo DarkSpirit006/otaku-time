@@ -10,6 +10,8 @@ export const SCHEDULE_FIELDS = `
     season seasonYear genres
     title { romaji english native }
     coverImage { medium large extraLarge color }
+    bannerImage
+    studios { nodes { name isAnimationStudio } }
     synonyms
     nextAiringEpisode { id episode airingAt }
   }

@@ -101,3 +101,35 @@ test("a search that returns nothing still reports honestly", async () => {
     globalThis.fetch = original;
   }
 });
+
+/* ------------------------------------------------------------
+   The schedule payload feeds the feature panel and the lead panels,
+   not just the compact cards. Those surfaces want the landscape banner
+   and the studio line; if the query does not ask for them the panel
+   silently falls back to a cropped portrait cover and prints a meta
+   line with a hole in it.
+   ------------------------------------------------------------ */
+
+test("the schedule query asks for the fields the feature panel renders", () => {
+  const source = readFileSync(QUERY_PATH, "utf8");
+  const start = source.indexOf("export const SCHEDULE_FIELDS");
+  // Stop at the closing backtick of that one template — DETAILS_FIELDS below
+  // already declares both fields and would mask the gap.
+  const fields = source.slice(start, source.indexOf("`;", start));
+
+  assert.match(fields, /bannerImage/, "no bannerImage → the hero uses a cropped cover");
+  assert.match(fields, /studios\s*\{\s*nodes\s*\{\s*name/, "no studios → the meta line loses its studio");
+});
+
+test("normalized schedule media keeps the banner and the studio", async () => {
+  const { normalizeMedia } = await import("../../js/api/normalize.js");
+  const media = normalizeMedia({
+    id: 1,
+    type: "ANIME",
+    bannerImage: "https://s4.anilist.co/file/anilistcdn/media/anime/banner/1-x.jpg",
+    studios: { nodes: [{ name: "Shin-Ei Animation", isAnimationStudio: true }] },
+    title: { romaji: "Test" },
+  });
+  assert.equal(media.bannerImage, "https://s4.anilist.co/file/anilistcdn/media/anime/banner/1-x.jpg");
+  assert.deepEqual(media.studios, [{ name: "Shin-Ei Animation", isMain: true }]);
+});

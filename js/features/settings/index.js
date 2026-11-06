@@ -15,6 +15,7 @@ import { notificationSupport, clearReminders, reminderCount } from "../../servic
 import { canInstall, promptInstall } from "../../services/pwa.js";
 import { offerUndo } from "../../services/undo.js";
 import { detectedZone, validZone } from "../../utils/time.js";
+import { timezoneOptions } from "./timezones.js";
 
 const IMPORT_MAX_BYTES = 5 * 1024 * 1024;
 
@@ -23,38 +24,6 @@ let content = null;
 let ctxRef = null;
 let fileInput = null;
 
-const ZONES = [
-  "UTC",
-  "Africa/Cairo",
-  "Africa/Johannesburg",
-  "America/Chicago",
-  "America/Los_Angeles",
-  "America/Mexico_City",
-  "America/New_York",
-  "America/Sao_Paulo",
-  "Asia/Bangkok",
-  "Asia/Dhaka",
-  "Asia/Dubai",
-  "Asia/Hong_Kong",
-  "Asia/Jakarta",
-  "Asia/Karachi",
-  "Asia/Kathmandu",
-  "Asia/Kolkata",
-  "Asia/Seoul",
-  "Asia/Shanghai",
-  "Asia/Singapore",
-  "Asia/Taipei",
-  "Asia/Tokyo",
-  "Australia/Perth",
-  "Australia/Sydney",
-  "Europe/Berlin",
-  "Europe/London",
-  "Europe/Madrid",
-  "Europe/Moscow",
-  "Europe/Paris",
-  "Europe/Warsaw",
-  "Pacific/Auckland",
-];
 
 export function initSettings(ctx) {
   ctxRef = ctx;
@@ -84,17 +53,6 @@ export function openSettings(opener) {
 export function closeSettings() {
   if (!dialog?.open) return;
   dialog.close();
-}
-
-function timezoneOptions(current) {
-  const zones = new Set([detectedZone(), current, ...ZONES].filter((zone) => validZone(zone)));
-  return [...zones]
-    .sort()
-    .map(
-      (zone) =>
-        `<option value="${esc(zone)}" ${zone === current ? "selected" : ""}>${esc(zone.replace(/_/g, " "))}</option>`
-    )
-    .join("");
 }
 
 function renderSettings() {

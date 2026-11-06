@@ -9,7 +9,7 @@
 
 import { esc } from "../utils/dom.js";
 import { titleOf, formatLabel } from "../utils/format.js";
-import { countdown, airingTime, shortTime } from "../utils/time.js";
+import { countdown, countdownParts, airingTime, shortTime } from "../utils/time.js";
 import { watchlist, progressCap } from "../storage/watchlist.js";
 import { highlightText } from "../utils/search-rank.js";
 import { airingState, episodesBehind, canComplete } from "../utils/media-state.js";
@@ -232,7 +232,9 @@ function segmentMeter(watched, total) {
 
 function statusPill(item) {
   const status = item.listStatus;
-  if (!status) return "";
+  // A saved title may never have been given a personal status. Show the
+  // empty slot honestly instead of inventing one.
+  if (!status) return `<span class="status-pill status-pill--none">Unset</span>`;
   const auto = item.statusSource !== "user" ? " is-auto" : "";
   return `<span class="status-pill status-pill--${status}${auto}">${esc(
     status === "onhold" ? "On hold" : status.charAt(0).toUpperCase() + status.slice(1)
@@ -260,10 +262,10 @@ export function watchlistCard(item, prefs) {
   const airingLine =
     airing.kind === "countdown"
       ? `<span class="card__airing" data-countdown data-epoch="${airing.epoch}" data-duration="0"
-           data-prefix="${nextEpisode ? `Next ep ${nextEpisode} ` : "Next "}"></span>`
+           data-prefix="${nextEpisode ? `Ep ${nextEpisode} · ` : ""}"></span>`
       : airing.text
         ? `<span class="card__airing is-${airing.kind}">${esc(airing.text)}</span>`
-        : "";
+        : `<span class="card__airing is-none">No schedule</span>`;
 
   const badge = complete
     ? "DONE"
@@ -273,47 +275,62 @@ export function watchlistCard(item, prefs) {
         ? `${behind} NEW`
         : "NEW";
 
-  // `is-tracked` means "in progress" (matches the stats above the grid);
-  // `card--saved` marks every library card, which is what gestures bind to.
   const inProgress = item.listStatus === "watching" || item.listStatus === "onhold";
+
+  /* One aligned row, printed: index · cover · title · status · progress ·
+     next airing · actions. The full-row button makes the whole entry
+     clickable without swallowing the controls that sit above it. */
   return `<article class="card card--saved ${tintClass(item)}${inProgress ? " is-tracked" : ""}${complete ? " is-complete" : ""}"
       data-eid="w${item.id}" data-id="${item.id}">
     <button class="card__open" data-action="detail" data-id="${item.id}" aria-label="Details for ${esc(title)}"></button>
+
     <div class="card__poster-wrap">
       ${posterMarkup(item, { sizes: CARD_SIZES })}
       <span class="card__ep">${badge}</span>
-      ${saveButton(item, "card__save")}
-      ${scheduleChangeBadge(item.id)}
     </div>
+
     <div class="card__body">
+      <span class="card__title">${esc(title)}</span>
       <div class="card__topline">
         <span>${esc(formatLabel(item.format))}</span>
-        ${statusPill(item)}
         ${score !== null ? `<span class="badge badge--score">${score}</span>` : ""}
+        ${behind !== null && behind > 0 && !complete ? `<span class="card__behind">${behind} behind</span>` : ""}
       </div>
-      <span class="card__title">${esc(title)}</span>
-      ${airingLine}
-      ${behind !== null && behind > 0 && !complete ? `<span class="card__behind">${behind} episode${behind === 1 ? "" : "s"} behind</span>` : ""}
-      <div class="card__progress">
-        ${segmentMeter(watched, total)}
-        <span class="card__progress-text${complete ? " is-complete" : ""}">
-          <span>${total !== null ? `${watched}/${total}` : watched}</span>
-        </span>
-      </div>
+    </div>
+
+    <div class="card__status">${statusPill(item)}</div>
+
+    <div class="card__progress">
+      ${segmentMeter(watched, total)}
+      <span class="card__progress-text${complete ? " is-complete" : ""}">
+        <span>${total !== null ? `${watched}/${total}` : watched}</span>
+      </span>
       <div class="card__controls" data-controls>
         <button class="step-btn" data-action="step" data-delta="-1" data-id="${item.id}"
           aria-label="Decrease watched episodes for ${esc(title)}" ${watched <= 0 ? "disabled" : ""}>
           ${icon("minus")}
         </button>
+        <label class="sr-only" for="progress-${item.id}">Episodes watched for ${esc(title)}</label>
+        <input class="number-input card__number" id="progress-${item.id}" data-progress-input data-id="${item.id}"
+          type="number" inputmode="numeric" min="0" ${total !== null ? `max="${total}"` : ""} value="${watched}" />
         <button class="step-btn step-btn--plus" data-action="step" data-delta="1" data-id="${item.id}"
           aria-label="Increase watched episodes for ${esc(title)}" ${complete ? "disabled" : ""}>
           ${icon("plus")}
         </button>
-        <label class="sr-only" for="progress-${item.id}">Episodes watched for ${esc(title)}</label>
-        <input class="number-input card__number" id="progress-${item.id}" data-progress-input data-id="${item.id}"
-          type="number" inputmode="numeric" min="0" ${total !== null ? `max="${total}"` : ""} value="${watched}" />
-        ${done ? `<span class="badge badge--ok">Complete</span>` : ""}
       </div>
+    </div>
+
+    <div class="card__next">
+      <span class="card__next-label">Next</span>
+      ${airingLine}
+    </div>
+
+    <div class="card__row-actions">
+      ${done ? `<span class="badge badge--ok">Complete</span>` : ""}
+      ${scheduleChangeBadge(item.id)}
+      <button class="icon-btn card__details" data-action="detail" data-id="${item.id}"
+        aria-label="Details for ${esc(title)}">${icon("arrow-up-right")}</button>
+      ${saveButton(item, "card__save")}
     </div>
   </article>`;
 }
@@ -384,19 +401,26 @@ export function leadStrip(entries, prefs) {
       const timeText = countdown(entry.airingAt, media.duration, nowSeconds);
       const fullTime = airingTime(entry.airingAt, prefs.timezone, prefs.hour12);
       const number = String(index + 1).padStart(2, "0");
+      const art = media.bannerImage || posterUrl(media);
+      const score = Number(media.averageScore);
 
       return `<article class="lead-panel ${tintClass(media)}" data-eid="e${entry.id ?? `x${media.id}`}">
         <button class="lead-panel__open" data-action="detail" data-id="${media.id}" aria-label="Details for ${esc(title)}"></button>
         <div class="lead-panel__media">
-          ${posterMarkup(media, { sizes: LEAD_SIZES })}
-          <span class="lead-panel__index">${number}</span>
-          ${saveButton(media, "lead-panel__save")}
+          ${
+            art
+              ? `<img class="card__poster" src="${esc(art)}" alt="" width="1600" height="900"
+                   loading="lazy" decoding="async" data-blur-up />`
+              : `<span class="lead-panel__fallback" aria-hidden="true"></span>`
+          }
+          <span class="lead-panel__index" aria-hidden="true">${number}</span>
         </div>
+        ${saveButton(media, "lead-panel__save")}
         <div class="lead-panel__body">
           <p class="lead-panel__meta">
             <span class="lead-panel__ep">Ep ${entry.episode}</span>
             <span>${esc(formatLabel(media.format))}</span>
-            ${Number.isInteger(media.averageScore) && media.averageScore > 0 ? `<span>${media.averageScore}%</span>` : ""}
+            ${score > 0 ? `<span>${(score / 10).toFixed(1)} ★</span>` : ""}
             ${scheduleChangeBadge(media.id)}
           </p>
           <h3 class="lead-panel__title">${esc(title)}</h3>
@@ -413,14 +437,37 @@ export function leadStrip(entries, prefs) {
 }
 
 /** Day-group section (Upcoming + Recently aired share the head styles). */
-export function dayGroup({ key, label, relative = "", count = 0, content, partial = false }) {
+export function dayGroup({
+  key,
+  label,
+  relative = "",
+  count = 0,
+  index = 0,
+  mark = "",
+  compact = false,
+  content,
+  partial = false,
+}) {
+  const labelMark = mark || (index ? `D${String(index).padStart(2, "0")}` : "");
+  // `compact` renders the day as a sticky sub-rule inside a named part
+  // (the archive's individual days) instead of a full section header.
+  if (compact) {
+    return `<section class="day-group day-group--compact" data-day="${esc(key)}">
+      <header class="day-group__sub">
+        <span>${esc(label)}</span>
+        <span>${count} broadcast${count === 1 ? "" : "s"}</span>
+      </header>
+      ${content}
+    </section>`;
+  }
   return `<section class="day-group${partial ? " is-partial" : ""}" data-day="${esc(key)}">
     <header class="day-group__head">
-      <h3 class="day-group__label">${esc(label)}${
-        relative ? ` <span class="day-group__relative">· ${esc(relative)}</span>` : ""
-      }</h3>
-      <span class="day-group__rule" aria-hidden="true"></span>
-      <span class="day-group__count">${count} episode${count === 1 ? "" : "s"}${
+      <div class="day-group__title">
+        ${labelMark ? `<span class="day-group__index" aria-hidden="true">${labelMark}</span>` : ""}
+        <h3 class="day-group__label">${esc(label)}</h3>
+        ${relative ? `<span class="day-group__relative">${esc(relative)}</span>` : ""}
+      </div>
+      <span class="day-group__count">${count} broadcast${count === 1 ? "" : "s"}${
         partial ? ` · more may load` : ""
       }</span>
     </header>
@@ -432,58 +479,94 @@ export function dayGroup({ key, label, relative = "", count = 0, content, partia
    Spotlight
    ------------------------------------------------------------ */
 
+/**
+ * The feature plate: one cinematic panel for the next broadcast.
+ *
+ * The artwork is a background plate (banner when AniList has one, cover
+ * otherwise) behind a veil that fades to paper at the bottom and from the
+ * left, so the type always sits on the page colour rather than on
+ * whatever the frame happens to contain. `?spotlight=text` drops the
+ * image entirely — the documented low-bandwidth escape hatch.
+ */
+/**
+ * First studio name, whatever shape the media came in.
+ *
+ * `normalizeMedia` stores studios as `[{name, isMain}]`; raw AniList rows
+ * and older cached watchlist items still carry `{nodes: [...]}`. Reading
+ * only one of the two left the feature panel's meta line with a hole in it.
+ */
+function studioOf(media) {
+  const list = Array.isArray(media?.studios?.nodes) ? media.studios.nodes : media?.studios;
+  if (!Array.isArray(list)) return "";
+  const studio = list.find((entry) => entry && typeof entry.name === "string" && entry.name.trim());
+  return studio ? studio.name.trim() : "";
+}
+
 export function spotlight(entry, prefs, { saved }) {
   const media = entry.media;
   const title = titleOf(media);
-  const nowSeconds = Date.now() / 1000;
-  const timeText = countdown(entry.airingAt, media.duration, nowSeconds);
   const fullTime = airingTime(entry.airingAt, prefs.timezone, prefs.hour12).replace(
     /^(\w+), /,
-    "$1 "
+    "$1, "
   );
-  const url = posterUrl(media);
+  const parts = countdownParts(entry.airingAt);
+  const textOnly = document.documentElement.dataset.spotlight === "text";
+  const banner = media.bannerImage || posterUrl(media);
+  const meta = [
+    formatLabel(media.format),
+    studioOf(media),
+    media.seasonYear ? `${media.season ? `${media.season.toLowerCase()} ` : ""}${media.seasonYear}` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const score = Number(media.averageScore);
+  const onAir = entry.airingAt * 1000 <= Date.now();
 
-  // The typographic plate always sits underneath; a poster that fails to
-  // decode simply reveals it instead of leaving a hole.
-  const poster = `<div class="spotlight__poster-fallback" aria-hidden="true">
-       <span class="spotlight__poster-mark">OT</span>
-       <span class="spotlight__poster-title">${esc(title)}</span>
-     </div>${
-    url
-      ? `<img class="card__poster" src="${esc(url)}" ${posterSrcset(media)}
-           sizes="(max-width: 760px) 100vw, 46vw" alt="${esc(title)} poster" width="320" height="457"
-           fetchpriority="high" decoding="async" data-blur-up />`
-      : ""
-  }`;
+  const plate = textOnly
+    ? `<div class="spotlight__plate" aria-hidden="true"></div>`
+    : `<div class="spotlight__media">
+        <img class="card__poster" src="${esc(banner)}" alt="" width="1600" height="900"
+          fetchpriority="high" decoding="async" data-blur-up />
+        <span class="spotlight__veil" aria-hidden="true"></span>
+      </div>`;
 
   return `<section class="spotlight ${tintClass(media)}" aria-label="Next episode">
     <div class="spotlight__content">
-      <p class="spotlight__label">Next episode</p>
+      <p class="spotlight__label">
+        <span class="spotlight__chip">${onAir ? "On air now" : "Next broadcast"}</span>
+        <span class="spotlight__stamp">${esc(fullTime)} — Ep ${String(entry.episode).padStart(2, "0")}</span>
+      </p>
+      <div class="spotlight__count" data-countdown-segments data-epoch="${entry.airingAt}">
+        <span class="spotlight__count-label" aria-hidden="true">T—</span>
+        <span class="spotlight__cell"><span class="spotlight__seg" data-seg="h">${parts.h}</span><span class="spotlight__unit" aria-hidden="true">Hrs</span></span>
+        <span class="spotlight__colon" aria-hidden="true">:</span>
+        <span class="spotlight__cell"><span class="spotlight__seg" data-seg="m">${parts.m}</span><span class="spotlight__unit" aria-hidden="true">Min</span></span>
+        <span class="spotlight__colon" aria-hidden="true">:</span>
+        <span class="spotlight__cell"><span class="spotlight__seg" data-seg="s">${parts.s}</span><span class="spotlight__unit" aria-hidden="true">Sec</span></span>
+      </div>
+      <p class="spotlight__count-text sr-only" data-countdown data-epoch="${entry.airingAt}" data-duration="${media.duration ?? 0}">${esc(countdown(entry.airingAt, media.duration))}</p>
       <h2 class="spotlight__title">
         <button data-action="detail" data-id="${media.id}">${esc(title)}</button>
       </h2>
-      <div class="spotlight__meta">
-        <span class="badge badge--accent">Episode ${entry.episode}</span>
-        ${scoreBadge(media)}
-        <span class="badge">${esc(formatLabel(media.format))}</span>
+      <p class="spotlight__meta">
+        <span>${esc(meta)}</span>
+        ${score ? `<span class="spotlight__score">${starIcon()}${(score / 10).toFixed(1)}</span>` : ""}
         ${scheduleChangeBadge(media.id)}
-      </div>
-      <div class="spotlight__countdown">
-        <span class="spotlight__countdown-value" data-countdown data-epoch="${entry.airingAt}" data-duration="${media.duration ?? 0}">${esc(timeText)}</span>
-        <span class="spotlight__countdown-time">${esc(fullTime)}</span>
-      </div>
+      </p>
       <div class="spotlight__actions">
-        <button class="btn btn--primary" data-action="detail" data-id="${media.id}">View details</button>
+        <button class="btn btn--primary" data-action="detail" data-id="${media.id}">
+          Open dossier ${icon("arrow-up-right")}
+        </button>
         <button class="btn ${saved ? "btn--secondary" : "btn--ghost"}" data-action="save" data-id="${media.id}">
-          ${saved ? "In watchlist" : "Add to watchlist"}
+          ${saved ? icon("check") : "+"} <span>${saved ? "In watchlist" : "Save"}</span>
         </button>
       </div>
     </div>
-    <div class="spotlight__media">
-      <div class="spotlight__poster">
-        ${poster}
-        <button data-action="detail" data-id="${media.id}" aria-label="Details for ${esc(title)}"></button>
-      </div>
-    </div>
+    ${plate}
+    <span class="spotlight__rail" aria-hidden="true">Almanac — live feed</span>
   </section>`;
+}
+
+function starIcon() {
+  return `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" class="star-icon"><path d="m12 3.6 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.8l5.9-.9z"/></svg>`;
 }

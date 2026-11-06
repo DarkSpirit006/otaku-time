@@ -9,7 +9,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
 
@@ -310,4 +310,37 @@ test("same-origin assets are cached and refreshed", async () => {
   const cache = await caches.open("otaku-time-v4-shell");
   const stored = await cache.match(`${ORIGIN}/js/app.js`);
   assert.ok(stored, "asset cached on first hit");
+});
+
+/* ------------------------------------------------------------
+   The shell list is written by hand, so it drifts every time the
+   module graph grows. A module left out of it loads fine online and
+   fails on a cold offline start — the whole module graph dies on the
+   first missing import and nothing renders.
+   ------------------------------------------------------------ */
+
+test("the shell list covers every module under js/", () => {
+  const source = readFileSync(SW_PATH, "utf8");
+  const start = source.indexOf("const SHELL = [");
+  const end = source.indexOf("];", start);
+  assert.ok(start !== -1 && end !== -1, "SHELL block not found");
+
+  const listed = new Set(
+    [...source.slice(start, end).matchAll(/"\.\/([^"]+)"/g)].map(([, path]) => path)
+  );
+
+  const root = fileURLToPath(new URL("../../js", import.meta.url));
+  const modules = [];
+  const walk = (dir, prefix = "js") => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = `${prefix}/${entry.name}`;
+      if (entry.isDirectory()) walk(`${dir}/${entry.name}`, path);
+      else if (entry.name.endsWith(".js")) modules.push(path);
+    }
+  };
+  walk(root);
+
+  const missing = modules.filter((path) => !listed.has(path)).sort();
+  assert.deepEqual(missing, [], `modules missing from sw.js SHELL: ${missing.join(", ")}`);
+  assert.ok(modules.length > 20, "module scan found suspiciously few files");
 });

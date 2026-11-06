@@ -13,6 +13,7 @@ import {
   detailsPayload,
   collectPageErrors,
   seedWatchlist,
+  openSearchField,
 } from "./helpers.js";
 
 /* ============================================================
@@ -53,6 +54,9 @@ test.describe("topbar composition", () => {
     ]) {
       await page.setViewportSize(viewport);
       await page.waitForTimeout(120);
+      // On phones the field is collapsed behind the search button; measure
+      // it in the state a user actually sees it in.
+      await openSearchField(page);
       const g = await geometry()(page);
       expect(g, JSON.stringify(g)).toMatchObject({
         borderTop: "0px",
@@ -69,36 +73,144 @@ test.describe("topbar composition", () => {
 });
 
 /* ============================================================
-   The feature's bottom scrim is what lets the eyebrow label sit over
-   arbitrary artwork. It has to paint ABOVE the poster image (z-index 1),
-   otherwise the fade silently does nothing and red text lands on
-   whatever colour the poster happens to be.
+   The compact bar is the phone shell: one search node, collapsed until
+   the search button (or the "/" shortcut) reveals it. The desk rail is
+   hidden at this width, so anything that only lived there — the settings
+   trigger, for one — became unreachable.
    ============================================================ */
-test.describe("feature scrim", () => {
-  test("paints above the poster and fades to the page colour on phones", async ({ page }) => {
-    const events = defaultEvents();
-    await mockAniList(page, standardSchedules(events));
-    await page.setViewportSize({ width: 390, height: 844 });
+test.describe("compact bar", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test("keeps one search field, collapsed until the search button opens it", async ({ page }) => {
+    await mockAniList(page, standardSchedules(defaultEvents()));
     await page.goto("/");
-    await expect(page.locator(".spotlight__poster")).toBeVisible();
+    await expect(page.locator(".card, .lead-panel").first()).toBeVisible();
 
-    const scrim = await page.evaluate(() => {
-      const poster = document.querySelector(".spotlight__poster");
-      const img = poster.querySelector("img");
-      const after = getComputedStyle(poster, "::after");
-      return {
-        content: after.content,
-        position: after.position,
-        scrimZ: after.zIndex === "auto" ? 0 : Number(after.zIndex),
-        imageZ: img ? Number(getComputedStyle(img).zIndex || 0) : 0,
-        background: after.backgroundImage,
-      };
+    // One node, one value — never a second input in the hidden chrome.
+    await expect(page.locator("#search")).toHaveCount(1);
+    await expect(page.locator("#search")).toBeHidden();
+    await expect(page.locator(".rail")).toBeHidden();
+
+    const toggle = page.locator(".js-search-toggle").filter({ visible: true }).first();
+    await expect(toggle).toHaveAttribute("aria-expanded", "false");
+    await toggle.click();
+    await expect(page.locator("#search")).toBeVisible();
+    await expect(page.locator("#search")).toBeFocused();
+    await expect(toggle).toBeVisible();
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    await expect(toggle).toHaveAttribute("aria-label", "Close search");
+
+    // The control that opened the bar also closes it, and the query
+    // survives so reopening does not silently start over.
+    await page.fill("#search", "alpha");
+    await toggle.click();
+    await expect(page.locator("#search")).toBeHidden();
+    await expect(toggle).toHaveAttribute("aria-expanded", "false");
+    await toggle.click();
+    await expect(page.locator("#search")).toHaveValue("alpha");
+
+    // Escape collapses the bar *and* clears the query, returning the
+    // section — the same contract as pressing Escape with the caret
+    // anywhere else.
+    await expect(page.locator("#section-title")).toHaveText("Results");
+    await page.keyboard.press("Escape");
+    await expect(page.locator("#search")).toBeHidden();
+    await expect(page.locator("#search")).toHaveValue("");
+    await expect(page.locator("#section-title")).toHaveText("Upcoming");
+  });
+
+  test("the \"/\" shortcut reveals the field instead of focusing it off-screen", async ({ page }) => {
+    await mockAniList(page, {
+      ...standardSchedules(defaultEvents()),
+      search: () => searchPayload([makeMedia(909, "Attack on Titan")]),
     });
+    await page.goto("/");
+    await expect(page.locator(".card, .lead-panel").first()).toBeVisible();
 
-    expect(scrim.content).not.toBe("none");
-    expect(scrim.position).toBe("absolute");
-    expect(scrim.background).toContain("linear-gradient");
-    expect(scrim.scrimZ, `scrim z ${scrim.scrimZ} vs image z ${scrim.imageZ}`).toBeGreaterThan(scrim.imageZ);
+    await page.keyboard.press("/");
+    await expect(page.locator("#search")).toBeVisible();
+    await expect(page.locator("#search")).toBeFocused();
+
+    await page.keyboard.type("aot");
+    await expect(page.locator("#section-title")).toHaveText("Results");
+    await expect(page.locator(".card__title")).toContainText("Attack on Titan");
+  });
+
+  test("settings are reachable from the bar, not only from the desk rail", async ({ page }) => {
+    await mockAniList(page, standardSchedules(defaultEvents()));
+    await page.goto("/");
+    await expect(page.locator(".card, .lead-panel").first()).toBeVisible();
+
+    const trigger = page.locator(".js-settings-open").filter({ visible: true });
+    await expect(trigger).toHaveCount(1);
+    await trigger.click();
+    await expect(page.locator("#settings-dialog")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.locator("#settings-dialog")).toBeHidden();
+  });
+});
+
+/* ============================================================
+   The feature's veil is what lets type sit over arbitrary artwork: the
+   artwork plate fades to the page colour underneath the copy. It has to
+   paint ABOVE the image and it has to end on --paper, in whichever theme
+   is running — a translucent last stop leaves the headline legible only
+   while the poster happens to be dark.
+   ============================================================ */
+test.describe("feature veil", () => {
+  test("paints above the artwork and fades to the page colour", async ({ page }) => {
+    for (const theme of ["dark", "light"]) {
+      const events = defaultEvents();
+      await mockAniList(page, standardSchedules(events));
+      await page.addInitScript((name) => localStorage.setItem("otaku-time.theme.v1", name), theme);
+
+      for (const viewport of [
+        { width: 390, height: 844 },
+        { width: 1440, height: 900 },
+      ]) {
+        const where = `${theme}/${viewport.width}`;
+        await page.setViewportSize(viewport);
+        await page.goto("/");
+        await expect(page.locator(".spotlight__media")).toBeVisible();
+
+        const veil = await page.evaluate(() => {
+          const spotlight = document.querySelector(".spotlight");
+          const media = spotlight.querySelector(".spotlight__media");
+          const image = media.querySelector("img");
+          const overlay = spotlight.querySelector(".spotlight__veil");
+          if (!overlay || !image) return { present: false };
+          const probe = document.createElement("span");
+          probe.style.background = "var(--paper)";
+          document.body.appendChild(probe);
+          const paper = getComputedStyle(probe).backgroundColor;
+          probe.remove();
+          const box = media.getBoundingClientRect();
+          const overlayBox = overlay.getBoundingClientRect();
+          const copy = spotlight.querySelector(".spotlight__content").getBoundingClientRect();
+          return {
+            present: true,
+            paper,
+            positioned: getComputedStyle(overlay).position,
+            covers: Math.round(overlayBox.width) === Math.round(box.width) && Math.round(overlayBox.height) === Math.round(box.height),
+            // compareDocumentPosition: the veil must follow the image so it
+            // paints on top inside the same stacking context.
+            above: Boolean(image.compareDocumentPosition(overlay) & Node.DOCUMENT_POSITION_FOLLOWING),
+            stops: getComputedStyle(overlay).backgroundImage.match(/rgba?\([^)]+\)(?:\s+\d+%)?/g) || [],
+            // Copy lives on the plate, never outside it.
+            copyInside: copy.top >= box.top - 1 && copy.bottom <= box.bottom + 1,
+          };
+        });
+
+        expect(veil.present, `${where}: no veil or no artwork`).toBe(true);
+        expect(veil.positioned, where).toBe("absolute");
+        expect(veil.covers, `${where}: veil does not cover the plate`).toBe(true);
+        expect(veil.above, `${where}: veil is behind the artwork`).toBe(true);
+        expect(veil.stops.length, `${where}: veil has no gradient`).toBeGreaterThan(1);
+        // The last stop is opaque page colour, not a tint over the art.
+        expect(veil.stops.at(-1), `${where}: fade ends on ${veil.stops.at(-1)}, paper is ${veil.paper}`).toContain(veil.paper);
+        expect(veil.copyInside, `${where}: copy spills outside the plate`).toBe(true);
+      }
+    }
   });
 });
 
@@ -187,7 +299,7 @@ test.describe("live countdowns", () => {
     // itself is allowed to cross an hour boundary while we wait.
     const timeOf = (text) => text.split("·").pop().trim();
     expect(timeOf(after)).toBe(timeOf(before));
-    expect(after.split("·")[0].trim()).toMatch(/^in /);
+    expect(after.split("·")[0].trim()).toMatch(/^in /i);
   });
 });
 
@@ -244,6 +356,87 @@ test.describe("today's already-aired rows", () => {
 });
 
 /* ============================================================
+   The rundown's first column is the air time ("23:30"), and the compact
+   rule hid it outright below 900px. A row without its clock is a row
+   missing one of the five things it promises — the time it aired — so on
+   phones it moves under the title instead of disappearing.
+   ============================================================ */
+test.describe("recently aired rundown", () => {
+  test("keeps the air time on phones instead of hiding the column", async ({ page }) => {
+    const events = defaultEvents();
+    await mockAniList(page, standardSchedules(events));
+    await page.setViewportSize({ width: 360, height: 800 });
+    await page.goto("/#recent");
+
+    const row = page.locator(".row").first();
+    await expect(row).toBeVisible();
+    const clock = row.locator(".row__clock");
+    await expect(clock).toBeVisible();
+
+    const measured = await page.evaluate(() => {
+      const row = document.querySelector(".row");
+      const clock = row.querySelector(".row__clock");
+      const text = clock.innerText.trim();
+      const box = clock.getBoundingClientRect();
+      const rowBox = row.getBoundingClientRect();
+      return {
+        text,
+        width: Math.round(box.width),
+        inside: box.left >= rowBox.left - 1 && box.right <= rowBox.right + 1,
+        overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      };
+    });
+
+    expect(measured.text).toMatch(/^\d{1,2}:\d{2}\s*(AM|PM)?$/i);
+    expect(measured.width).toBeGreaterThan(20);
+    expect(measured.inside).toBe(true);
+    expect(measured.overflow).toBeLessThanOrEqual(0);
+  });
+});
+
+/* ============================================================
+   Below 960px the timetable becomes an agenda: one day per block and the
+   day's slots in a small grid. The "now" marker is a child of that same
+   grid, so it took a whole cell as if it were a programme — pushing the
+   first slot into the second column and leaving a third of the row empty.
+   ============================================================ */
+test.describe("calendar agenda", () => {
+  for (const width of [768, 390]) {
+    test(`the now marker spans the day row at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      const events = defaultEvents();
+      await mockAniList(page, standardSchedules(events));
+      await page.goto("/#upcoming");
+      await page.locator('[data-action="set-view"][data-view="calendar"]').click();
+      await expect(page.locator(".cal-day").first()).toBeVisible();
+
+      const measured = await page.evaluate(() => {
+        const day = [...document.querySelectorAll(".cal-day")].find((d) =>
+          d.querySelector(".cal-slot")
+        );
+        const slots = day.querySelector(".cal-day__slots");
+        const slotsBox = slots.getBoundingClientRect();
+        const first = slots.querySelector(".cal-slot").getBoundingClientRect();
+        const marker = day.querySelector(".cal-now");
+        return {
+          slotsWidth: Math.round(slotsBox.width),
+          slotsLeft: Math.round(slotsBox.left),
+          firstLeft: Math.round(first.left),
+          markerWidth: marker ? Math.round(marker.getBoundingClientRect().width) : 0,
+          overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        };
+      });
+
+      // The marker is an annotation across the row, not a programme.
+      expect(measured.markerWidth).toBeGreaterThanOrEqual(measured.slotsWidth * 0.9);
+      // And the first programme starts where the day starts.
+      expect(Math.abs(measured.firstLeft - measured.slotsLeft)).toBeLessThanOrEqual(2);
+      expect(measured.overflow).toBeLessThanOrEqual(0);
+    });
+  }
+});
+
+/* ============================================================
    Artwork sizing. AniList's field names sit one step below the folders
    they point at (medium → /cover/small/, large → /cover/medium/,
    extraLarge → /cover/large/), and those folders are ~100/230/660 px.
@@ -293,52 +486,147 @@ test.describe("artwork sources", () => {
 });
 
 /* ============================================================
-   Layout prototype flag. `?spotlight=text` reorders the phone feature
-   (headline first, artwork as a strip). Whatever variant wins, the
-   switch must stay inert unless it is explicitly asked for, and both
-   orders must keep the same content and the same DOM order for
-   assistive tech.
+   The lead panel is one big "open the dossier" button. Its save control
+   used to live inside the art plate, which sits at z-index -1 — a stacking
+   context, so the save button was painted behind the overlay and could not
+   be clicked at all. It has to be the topmost thing at its own corner.
+   ============================================================ */
+test.describe("lead panel controls", () => {
+  test("save stays clickable above the open overlay", async ({ page }) => {
+    await mockAniList(page, standardSchedules(defaultEvents()));
+    await page.goto("/");
+    const save = page.locator(".lead-panel .lead-panel__save").first();
+    await expect(save).toHaveCount(1);
+
+    const onTop = await save.evaluate((button) => {
+      const box = button.getBoundingClientRect();
+      const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+      return hit === button || button.contains(hit);
+    });
+    expect(onTop, "another layer covers the lead panel's save button").toBe(true);
+
+    await save.click();
+    await expect(page.locator("#toast")).toHaveText(/Saved to watchlist/);
+    await expect(save).toHaveClass(/is-saved/);
+  });
+});
+
+/* ============================================================
+   The feature panel is one column at every width. A tablet-era
+   `grid-template-columns: 1.15fr .85fr` survived into the redesign and
+   split the plate in two below 1180px: the copy got 57% of the panel, and
+   the countdown — the panel's headline figure — was clipped to "T —" at
+   360px.
+   ============================================================ */
+test.describe("feature composition", () => {
+  test("copy keeps the full measure and the countdown stays whole", async ({ page }) => {
+    await mockAniList(page, standardSchedules(defaultEvents()));
+
+    for (const viewport of [
+      { width: 360, height: 800 },
+      { width: 768, height: 1024 },
+      { width: 1440, height: 900 },
+    ]) {
+      const where = `${viewport.width}px`;
+      await page.setViewportSize(viewport);
+      await page.goto("/");
+      await expect(page.locator(".spotlight__count")).toBeVisible();
+
+      const layout = await page.evaluate(() => {
+        const panel = document.querySelector(".spotlight");
+        const content = document.querySelector(".spotlight__content");
+        const count = document.querySelector(".spotlight__count");
+        const label = document.querySelector(".spotlight__count-label");
+        const units = [...document.querySelectorAll(".spotlight__unit")];
+        const panelBox = panel.getBoundingClientRect();
+        const contentBox = content.getBoundingClientRect();
+        const countBox = count.getBoundingClientRect();
+        const available = panelBox.width - parseFloat(getComputedStyle(panel).paddingLeft) * 2;
+        // The copy has a 46rem measure on purpose; on a wide panel it is
+        // allowed to stop there. It is never allowed to shrink below it
+        // while there is room.
+        const measure = parseFloat(getComputedStyle(content).maxWidth) || Infinity;
+        return {
+          columns: getComputedStyle(panel).gridTemplateColumns.split(" ").length,
+          share: contentBox.width / Math.min(available, measure),
+          clipped: count.scrollWidth > count.clientWidth + 1,
+          countWidth: Math.round(countBox.width),
+          labelVisible: label.getBoundingClientRect().width > 0,
+          units: units.map((unit) => getComputedStyle(unit).display !== "none"),
+        };
+      });
+
+      expect(layout.columns, `${where}: the panel is split into columns`).toBe(1);
+      expect(layout.share, `${where}: copy gets only ${Math.round(layout.share * 100)}% of its measure`).toBeGreaterThan(0.95);
+      expect(layout.clipped, `${where}: countdown is clipped`).toBe(false);
+      // The countdown keeps its unit labels — that is what makes it a
+      // countdown rather than a clock.
+      expect(layout.labelVisible, `${where}: "T—" prefix missing`).toBe(true);
+      expect(layout.units, `${where}: hour/minute/second labels hidden`).toEqual([true, true, true]);
+    }
+  });
+});
+
+/* ============================================================
+   Layout escape hatch. `?spotlight=text` is the documented low-bandwidth
+   route: the feature keeps its composition and its copy but drops the
+   artwork, so a slow connection never pays for a 1600px banner. It must be
+   inert unless asked for, must not change reading order, and must not
+   change what the panel says.
    ============================================================ */
 test.describe("spotlight layout flag", () => {
-  test("only reorders the phone layout when asked", async ({ page }) => {
+  test("only drops the artwork when explicitly asked", async ({ page }) => {
     const events = defaultEvents();
     await mockAniList(page, standardSchedules(events));
 
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/");
-    await expect(page.locator(".spotlight__title")).toBeVisible();
 
     const measure = () =>
       page.evaluate(() => {
-        const title = document.querySelector(".spotlight__title").getBoundingClientRect();
-        const media = document.querySelector(".spotlight__media").getBoundingClientRect();
+        const spotlight = document.querySelector(".spotlight");
+        const plate = spotlight.querySelector(".spotlight__plate");
+        const media = spotlight.querySelector(".spotlight__media");
+        const box = (plate || media).getBoundingClientRect();
         return {
           flag: document.documentElement.dataset.spotlight || "",
-          titleFirst: title.top < media.top,
-          sameTitle: document.querySelector(".spotlight__title").textContent.trim(),
+          images: spotlight.querySelectorAll("img").length,
+          plate: Boolean(plate),
+          media: Boolean(media),
+          coversPanel: Math.round(box.width) === Math.round(spotlight.getBoundingClientRect().width) - 2,
+          title: spotlight.querySelector(".spotlight__title").textContent.trim(),
+          actions: spotlight.querySelectorAll(".spotlight__actions .btn").length,
+          domOrder: [...spotlight.children].map((el) => el.className.split(" ")[0]),
         };
       });
 
+    await page.goto("/");
+    await expect(page.locator(".spotlight__title")).toBeVisible();
     const fallback = await measure();
     expect(fallback.flag).toBe("");
-    expect(fallback.titleFirst).toBe(false);
+    expect(fallback.images, "default feature must show artwork").toBe(1);
+    expect(fallback.media).toBe(true);
+    expect(fallback.plate, "text plate is the escape hatch, not the default").toBe(false);
 
     await page.goto("/?spotlight=text");
     await expect(page.locator(".spotlight__title")).toBeVisible();
     const variant = await measure();
     expect(variant.flag).toBe("text");
-    expect(variant.titleFirst).toBe(true);
-    // The content is identical; only the composition changed.
-    expect(variant.sameTitle).toBe(fallback.sameTitle);
+    expect(variant.images, "text mode must not fetch a banner").toBe(0);
+    expect(variant.plate).toBe(true);
+    expect(variant.media).toBe(false);
+    expect(variant.coversPanel, "the plate still fills the panel").toBe(true);
 
-    // Reading order for assistive tech never changes — CSS order only.
-    const domOrder = await page.evaluate(() =>
-      [...document.querySelector(".spotlight").children].map((el) => el.className)
-    );
-    expect(domOrder[0]).toContain("spotlight__content");
-    expect(domOrder[1]).toContain("spotlight__media");
+    // Same words, same actions, same reading order. The plate wrapper
+    // differs (an img against a bare plate), the sequence does not.
+    expect(variant.title).toBe(fallback.title);
+    expect(variant.actions).toBe(fallback.actions);
+    expect(variant.domOrder).toHaveLength(fallback.domOrder.length);
+    expect(variant.domOrder[0]).toContain("spotlight__content");
+    expect(fallback.domOrder[0]).toContain("spotlight__content");
+    expect(variant.domOrder.at(-1)).toBe(fallback.domOrder.at(-1));
   });
 });
+
 
 test.describe("boot & sections", () => {
   test("loads with branding, upcoming schedule and no page errors", async ({ page }) => {
@@ -468,6 +756,58 @@ test.describe("search", () => {
   });
 });
 
+test.describe("watchlist masthead", () => {
+  test("\"+ Add titles\" routes to the one search field, on any width", async ({ page }) => {
+    await mockAniList(page, {
+      ...standardSchedules(defaultEvents()),
+      search: () => searchPayload([makeMedia(909, "Attack on Titan")]),
+    });
+
+    for (const viewport of [
+      { width: 1440, height: 900 },
+      { width: 390, height: 844 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.goto("/#watchlist");
+      await expect(page.locator(".empty h2")).toBeVisible();
+
+      const add = page.locator('[data-action="add-titles"]');
+      await expect(add).toHaveCount(1);
+      await add.click();
+
+      // Same single field everywhere; on a phone the compact bar opens it.
+      await expect(page.locator("#search")).toHaveCount(1);
+      await expect(page.locator("#search")).toBeVisible();
+      await expect(page.locator("#search")).toBeFocused();
+    }
+  });
+
+  test("a saved title with no personal status says so instead of a dash", async ({ page }) => {
+    await seedWatchlist(page, [
+      {
+        id: 501,
+        title: { romaji: "Unfiled Show", english: "Unfiled Show" },
+        coverImage: { large: null, color: "#445566" },
+        format: "TV",
+        mediaStatus: "FINISHED",
+        listStatus: null,
+        episodes: 12,
+        watched: 0,
+        duration: 24,
+        order: 1,
+        createdAt: Date.now(),
+      },
+    ]);
+    await mockAniList(page, standardSchedules(defaultEvents()));
+    await page.goto("/#watchlist");
+
+    const pill = page.locator(".card--saved .status-pill--none").first();
+    await expect(pill).toHaveText("Unset");
+    // A lone em dash is not a status, it is a rendering accident.
+    await expect(pill).not.toHaveText("—");
+  });
+});
+
 test.describe("watchlist lifecycle", () => {
   test("save, count, progress and persistence across reload", async ({ page }) => {
     const events = defaultEvents();
@@ -552,11 +892,19 @@ test.describe("watchlist lifecycle", () => {
 
     await page.goto("/#watchlist");
     await expect(page.locator(".card")).toHaveCount(2);
-    const stats = page.locator(".stat__value");
-    await expect(stats.nth(0)).toHaveText("2");
-    await expect(stats.nth(1)).toHaveText("1"); // in progress
-    await expect(stats.nth(2)).toHaveText("1"); // completed
-    await expect(stats.nth(3)).toHaveText("17"); // episodes watched
+    // Four printed columns. "Behind schedule" counts shows, not episodes:
+    // summing episodes across a shelf where AniList has not published a
+    // total produces a number that reads as fact and is not.
+    const stats = page.locator(".stat");
+    await expect(stats).toHaveCount(4);
+    await expect(stats.nth(0).locator(".stat__label")).toHaveText("Titles");
+    await expect(stats.nth(0).locator(".stat__value")).toHaveText("2");
+    await expect(stats.nth(1).locator(".stat__label")).toHaveText("Episodes logged");
+    await expect(stats.nth(1).locator(".stat__value")).toHaveText("17");
+    await expect(stats.nth(2).locator(".stat__label")).toHaveText("Time spent");
+    await expect(stats.nth(2).locator(".stat__value")).toHaveText("6h 48m"); // 17 × 24 min
+    await expect(stats.nth(3).locator(".stat__label")).toHaveText("Behind schedule");
+    await expect(stats.nth(3).locator(".stat__value")).toHaveText("0");
     await expect(page.locator(".card.is-complete")).toHaveCount(1);
     await expect(page.locator(".card.is-tracked")).toHaveCount(1);
   });

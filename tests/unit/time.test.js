@@ -13,6 +13,7 @@ import {
   isTodayOrTomorrow,
   clockText,
   shortTime,
+  isoWeek,
 } from "../../js/utils/time.js";
 
 test("validZone accepts real IANA zones and rejects junk", () => {
@@ -119,4 +120,27 @@ test("shortTime converts across zones without weekday noise", () => {
   const date = new Date(Date.UTC(2026, 10, 5, 21, 30, 0));
   assert.equal(shortTime(date, "Asia/Tokyo", false), "06:30");
   assert.equal(shortTime(date, "America/New_York", false), "16:30");
+});
+
+/* ------------------------------------------------------------
+   Issue number on the filing line
+   ------------------------------------------------------------ */
+
+test("isoWeek numbers weeks from Monday and keeps the first Thursday", () => {
+  // 2026-01-01 is a Thursday: it belongs to week 01.
+  assert.equal(isoWeek(new Date("2026-01-01T12:00:00Z")), 1);
+  // 2026-01-04 is a Sunday — still week 01 of 2026.
+  assert.equal(isoWeek(new Date("2026-01-04T12:00:00Z")), 1);
+  // 2026-01-05 is the Monday that opens week 02.
+  assert.equal(isoWeek(new Date("2026-01-05T12:00:00Z")), 2);
+  // And a late-December Monday that belongs to next year's week 01.
+  assert.equal(isoWeek(new Date("2025-12-29T12:00:00Z")), 1);
+});
+
+test("isoWeek stays inside 1..53 across a year", () => {
+  for (let day = 0; day < 366; day += 1) {
+    const date = new Date(Date.UTC(2026, 0, 1 + day, 12));
+    const week = isoWeek(date);
+    assert.ok(week >= 1 && week <= 53, `${date.toISOString()} → ${week}`);
+  }
 });

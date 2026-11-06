@@ -6,22 +6,25 @@
 /* Stats rendered as one ruled ledger, not cards */
 .stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-  margin: 0 0 clamp(var(--sp-7), 5vw, var(--sp-9));
-  border-top: var(--hair) solid var(--border-strong);
-  border-bottom: var(--hair) solid var(--border-strong);
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  margin: 0 0 clamp(var(--sp-6), 4vw, var(--sp-8));
+  border-top: var(--hair) solid var(--border);
+  border-bottom: var(--hair) solid var(--border);
 }
 
 .stat {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-1);
-  padding: var(--sp-4) var(--sp-4) var(--sp-3-5) 0;
+  gap: 4px;
+  padding: var(--sp-4) var(--sp-4) var(--sp-3) 0;
   border-right: var(--hair) solid var(--border);
+  /* The figure scales to the cell (see .stat__value) rather than the cell
+     being sized around the longest figure a shelf can produce. */
+  container-type: inline-size;
 }
 
 .stat:not(:first-child) {
-  padding-left: var(--sp-5);
+  padding-left: var(--sp-4);
 }
 
 .stat:last-child {
@@ -31,34 +34,35 @@
 .stat__value {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: clamp(1.8rem, 1.1rem + 2.2vw, 3rem);
-  letter-spacing: -0.03em;
-  line-height: 0.95;
+  /* A long runner's shelf reaches four figures of hours ("468h 48m"). The
+     figure is one token, so it may not wrap; it steps down in size instead,
+     because a wrapped figure drops below its label and reads as two. */
+  /* The cell is the ceiling, not the target: an ordinary figure keeps its
+     full optical size, and only a figure too long for its cell steps down. */
+  font-size: min(clamp(1.5rem, 1rem + 1.5vw, 2.1rem), 12.5cqi);
+  letter-spacing: -0.02em;
+  line-height: 1;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-.stat:first-child .stat__value {
-  color: var(--accent-text);
-}
+
 
 .stat__label {
   font-family: var(--font-mono);
-  font-size: var(--text-2xs);
+  font-size: 0.5rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-faint);
 }
 
-/* Shelf sits denser than the schedule grid — more covers per screen */
-#app .card-grid {
-  grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
-  gap: var(--sp-5) var(--sp-3);
-}
-
-@media (min-width: 1400px) {
-  #app .card-grid {
-    grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
-  }
+/* The shelf is one list, not a grid: aligned columns read faster and
+   the hairlines carry the rhythm. */
+.card-grid--library {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  margin-top: var(--sp-4);
 }
 
 /* ============================================================
@@ -163,9 +167,10 @@
 
 .library-count strong { color: var(--text-dim); font-weight: 400; }
 
-.card-grid--library {
-  grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
-  gap: var(--sp-5) var(--sp-4);
+.library-group .card-grid--library {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
 }
 
 .library-group {

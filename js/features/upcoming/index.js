@@ -17,7 +17,7 @@ import {
   detachSentinel,
   scheduleSummary,
 } from "../../services/schedule.js";
-import { dayKey, dayLabel, isTodayOrTomorrow, timeAgo } from "../../utils/time.js";
+import { dayKey, dayLabel, isTodayOrTomorrow, timeAgo, isoWeek } from "../../utils/time.js";
 import {
   addDays,
   bucketByDay,
@@ -98,7 +98,7 @@ function renderTimeline(events, state_, prefs, ctx) {
   const boundaryKey = state_.more && groups.length ? groups[groups.length - 1][0] : null;
 
   const groupsHtml = groups
-    .map(([key, list]) => {
+    .map(([key, list], groupIndex) => {
       const label = dayLabel(list[0].airingAt * 1000, prefs.timezone);
       const relative = relativeLabel(key, prefs);
 
@@ -107,18 +107,18 @@ function renderTimeline(events, state_, prefs, ctx) {
           .map((event) => eventCard(event, prefs))
           .join("")}</div>`;
 
-      const leadCount = list.length >= 5 ? 2 : list.length >= 2 ? 1 : 0;
+      const leadCount = list.length >= 2 ? 1 : 0;
       let content;
 
       if (key === todayKey) {
         const past = list.filter((event) => event.airingAt < nowSeconds).reverse();
         const future = list.filter((event) => event.airingAt >= nowSeconds);
-        const futureLeadCount = future.length >= 5 ? 2 : future.length >= 2 ? 1 : 0;
+        const futureLeadCount = future.length >= 2 ? 1 : 0;
         const lead = future.length ? leadStrip(future.slice(0, futureLeadCount), prefs) : "";
         const rest = future.slice(futureLeadCount);
         const pastBlock = past.length
           ? `<div class="today-past">
-               <p class="today-past__label">Aired earlier today</p>
+               <p class="today-past__label">Already aired today — quiet file <span class="today-past__count">${past.length}</span></p>
                <div class="timeline__list">${past.map((event) => timelineRow(event, prefs)).join("")}</div>
              </div>
              <div class="now-divider" aria-hidden="true"><span>Now</span></div>`
@@ -137,6 +137,7 @@ function renderTimeline(events, state_, prefs, ctx) {
         key,
         label,
         relative,
+        index: groupIndex + 1,
         count: list.length,
         content,
         partial: key === boundaryKey,
@@ -276,7 +277,7 @@ function renderCalendar(events, state_, prefs, ctx) {
           ${list.length ? `<span class="cal-day__count">${list.length}</span>` : ""}
         </header>
         <div class="cal-day__slots">
-          ${slots || `<p class="cal-day__empty">—</p>`}
+          ${slots || `<p class="cal-day__empty">No airings</p>`}
           ${
             isToday && !markerShown
               ? `<div class="cal-now cal-now--end" aria-hidden="true"><span>Now</span></div>`
@@ -302,7 +303,11 @@ export function render(ctx) {
   const events = scheduled.events.slice().sort((a, b) => a.airingAt - b.airingAt);
   const summary = scheduleSummary("upcoming");
 
+  /* The filing line: what the window is, then what the data is doing.
+     The span is the API window (anchor−3h → anchor+4 weeks), not a guess. */
   const meta = [
+    "Four weeks forward",
+    `week ${isoWeek(new Date())}`,
     summary.label,
     scheduled.syncedAt ? `synced ${timeAgo(scheduled.syncedAt / 1000)}` : "not synced yet",
     scheduled.source === "cache" ? "from cache" : "",
@@ -311,7 +316,7 @@ export function render(ctx) {
     .join(" · ");
 
   const head = sectionHead({
-    eyebrow: "Schedule",
+    index: "01",
     title: "Up",
     tail: "coming",
     meta,
@@ -363,7 +368,11 @@ export function render(ctx) {
       ${notice(scheduled.warning, "warning")}
       ${
         state.view === "timeline" && nextUp
-          ? spotlight(nextUp, prefs, { saved: watchlist.has(nextUp.media.id) })
+          ? `<div class="feature-label">
+               <span>The next episode anywhere</span>
+               <span class="feature-label__hint">Live countdown</span>
+             </div>
+             ${spotlight(nextUp, prefs, { saved: watchlist.has(nextUp.media.id) })}`
           : ""
       }
       ${body}

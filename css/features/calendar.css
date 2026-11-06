@@ -260,8 +260,14 @@
 
   .cal-day__slots {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: var(--sp-1-5) var(--sp-4);
+  }
+
+  /* The marker annotates the whole day, so it spans the row instead of
+     occupying a programme cell and shoving the first airing sideways. */
+  .cal-now {
+    grid-column: 1 / -1;
   }
 
   /* Agenda slot: the time gets its own line so a 12-hour string can
@@ -286,7 +292,15 @@
     text-transform: uppercase;
   }
 
-  .cal-slot__poster { grid-area: poster; }
+  /* On the agenda the artwork is noise: a 34px thumbnail at the far end
+     of a wide cell, detached from the words it belongs to. The reference's
+     agenda is a log — time, title, meta — so the agenda is one too. */
+  .cal-slot__poster { display: none; }
+
+  .cal-slot {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "time" "title" "meta";
+  }
 
   .cal-slot__title { -webkit-line-clamp: 2; }
 
@@ -306,13 +320,15 @@
    so the week's shape is still visible at a glance. */
 @media (max-width: 960px) {
   .cal-day.is-empty {
-    padding-bottom: var(--sp-2);
+    padding-bottom: var(--sp-1);
   }
 
   .cal-day.is-empty .cal-day__head {
-    padding: var(--sp-1-5) 0;
+    padding: var(--sp-1) 0;
     align-items: center;
     gap: var(--sp-2);
+    margin-bottom: 0;
+    border-bottom-color: var(--border-faint);
   }
 
   .cal-day.is-empty .cal-day__name {

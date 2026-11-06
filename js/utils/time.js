@@ -54,6 +54,18 @@ export function longDate(date, zone) {
   }).format(date);
 }
 
+/** Compact date line for the rail: "Fri 06 Nov". */
+export function compactDate(date, zone) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: zone,
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+  }).formatToParts(date);
+  const get = (type) => parts.find((part) => part.type === type)?.value ?? "";
+  return `${get("weekday")} ${get("day")} ${get("month")}`;
+}
+
 /** Format an airing instant for a zone, with weekday + timezone name. */
 export function airingTime(epoch, zone, hour12) {
   if (!Number.isFinite(epoch)) return "Schedule TBA";
@@ -119,6 +131,27 @@ export function countdown(epoch, duration, now = Date.now() / 1000) {
   return `in ${mins}m ${secs}s`;
 }
 
+/**
+ * Split a countdown into display segments for the feature panel.
+ * Hours are capped at 99 so the plate never jumps width; beyond that the
+ * panel shows days in the same cell (still two digits up to 99 days).
+ * @returns {{h:string,m:string,s:string,negative:boolean}}
+ */
+export function countdownParts(epoch, now = Date.now() / 1000) {
+  const pad = (value) => String(Math.max(0, value)).padStart(2, "0");
+  if (!Number.isFinite(epoch)) return { h: "--", m: "--", s: "--", negative: false };
+  let diff = Math.ceil(epoch - now);
+  const negative = diff <= 0;
+  if (negative) diff = 0;
+  const hours = Math.floor(diff / 3600);
+  return {
+    h: pad(hours),
+    m: pad(Math.floor((diff % 3600) / 60)),
+    s: pad(diff % 60),
+    negative,
+  };
+}
+
 /** Short "time ago" label used by the Recently aired timeline. */
 export function timeAgo(epoch, now = Date.now() / 1000) {
   if (!Number.isFinite(epoch)) return "";
@@ -153,4 +186,14 @@ export function dayLabel(ms, zone, nowMs = Date.now()) {
 /** True when a day key is today or tomorrow in the zone. */
 export function isTodayOrTomorrow(key, zone, nowMs = Date.now()) {
   return key === dayKey(nowMs, zone) || key === nextDayKey(nowMs, zone);
+}
+
+/** ISO-8601 week number (Monday-based, week 1 holds the first Thursday).
+ *  Used by the printed filing line: `Vol. 2026 — Issue 45`. */
+export function isoWeek(date = new Date()) {
+  const utc = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const day = utc.getUTCDay() || 7;
+  utc.setUTCDate(utc.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(utc.getUTCFullYear(), 0, 1));
+  return Math.ceil(((utc - yearStart) / 86400000 + 1) / 7);
 }

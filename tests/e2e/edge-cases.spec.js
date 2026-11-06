@@ -331,11 +331,14 @@ test.describe("multi-tab & environment", () => {
 
   test("15. sentinel auto-loads the next schedule page", async ({ page }) => {
     const now = Math.floor(Date.now() / 1000);
-    const page1 = Array.from({ length: 6 }, (_, i) =>
+    // One event per day for twelve days: the sentinel has to start below the
+    // fold (the observer watches 400px past the viewport), otherwise the
+    // first page auto-loads before the test can look at the starting state.
+    const page1 = Array.from({ length: 12 }, (_, i) =>
       makeEvent({
         id: 9300 + i,
         episode: i + 1,
-        airingAt: now + 3600 * (i + 1),
+        airingAt: now + 86400 * (i + 1) + 3600,
         media: makeMedia(400 + i, `Page One Show ${i + 1}`),
       })
     );
@@ -343,7 +346,7 @@ test.describe("multi-tab & environment", () => {
       makeEvent({
         id: 9400 + i,
         episode: i + 1,
-        airingAt: now + 86400 * (i + 2),
+        airingAt: now + 86400 * (i + 13) + 3600,
         media: makeMedia(500 + i, `Page Two Show ${i + 1}`),
       })
     );
@@ -358,12 +361,20 @@ test.describe("multi-tab & environment", () => {
       },
     });
     await page.goto("/");
-    await expect(page.locator(".card, .lead-panel")).toHaveCount(6);
+    await expect(page.locator(".card, .lead-panel")).toHaveCount(12);
+    await expect(page.locator(".load-sentinel")).toHaveCount(1);
 
     // Scroll the sentinel into range → IntersectionObserver auto-loads page 2
     await page.locator(".load-sentinel").scrollIntoViewIfNeeded();
-    await expect(page.locator(".card, .lead-panel")).toHaveCount(10, { timeout: 20_000 });
-    await expect(page.locator(".card").last()).toContainText("Page Two Show 4");
+    await expect(page.locator(".card, .lead-panel")).toHaveCount(16, { timeout: 20_000 });
+
+    // Appended, not replaced: the first page is still on the page.
+    await expect(page.locator(".card").first()).toContainText("Page One Show 1");
+    await expect(page.locator(".card, .lead-panel").last()).toContainText("Page Two Show 4");
+
+    // And the end of the list is announced instead of an endless sentinel.
+    await expect(page.locator(".load-sentinel")).toHaveCount(0);
+    await expect(page.locator(".loading-more")).toContainText("Full schedule window loaded");
   });
 });
 

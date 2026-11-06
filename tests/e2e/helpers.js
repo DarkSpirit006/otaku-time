@@ -224,3 +224,26 @@ export function collectPageErrors(page) {
   });
   return errors;
 }
+
+/**
+ * Reveal the search field whatever width we are on.
+ *
+ * The field is a single node: on the desktop rail it is always mounted, but
+ * the compact bar (phones) keeps it collapsed behind the search button so
+ * the bar stays a bar. Tests that type a query have to reveal it first —
+ * `fill()` on a `display:none` input just times out, which is not a
+ * regression signal.
+ */
+export async function openSearchField(page) {
+  const input = page.locator("#search");
+  if (await input.isVisible()) return input;
+  await page.locator(".js-search-toggle").filter({ visible: true }).first().click();
+  await input.waitFor({ state: "visible" });
+  return input;
+}
+
+/** Reveal the field and type a query into it. */
+export async function typeSearch(page, value) {
+  const input = await openSearchField(page);
+  await input.fill(value);
+}

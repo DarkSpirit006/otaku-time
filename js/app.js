@@ -34,6 +34,7 @@ import { initPwa } from "./services/pwa.js";
 import { enhanceSelects, observeSelects } from "./components/select.js";
 import { showToast, initToast } from "./components/toast.js";
 import { renderWire, wireLines } from "./components/wire.js";
+import { initChrome, refreshChrome, revealSearch } from "./components/chrome.js";
 import { initPalette, openPalette, closePalette, openHelp, closeHelp, isHelpOpen } from "./components/palette.js";
 import { offerUndo } from "./services/undo.js";
 
@@ -270,9 +271,22 @@ function navigate(target, { push = true, focusMain = false } = {}) {
   if (query) setQuery("", { silent: true });
   if (target !== "upcoming") upcoming.setView("timeline");
 
-  animateNext = true;
-  features[section].onActivate?.(ctx);
-  render();
+  // Section switch: the swap is wrapped in a View Transition where the
+  // API exists, but render() still runs synchronously so the DOM, the
+  // focus target and the URL are never waiting on animation. Reduced
+  // motion and older browsers take the same path without the wrapper.
+  const resumable = typeof document.startViewTransition === "function" && !prefersReducedMotion();
+  if (resumable) {
+    document.startViewTransition(() => swap());
+  } else {
+    swap();
+  }
+
+  function swap() {
+    animateNext = true;
+    features[section].onActivate?.(ctx);
+    render();
+  }
 
   if (from !== section) window.scrollTo({ top: focusMain ? 0 : scrollMemory.get(target) || 0 });
   if (focusMain) qs("#main")?.focus?.({ preventScroll: true });
@@ -724,6 +738,11 @@ function onClick(event) {
     case "retry":
       refreshCurrent({ background: false });
       return;
+    case "add-titles":
+      // Adding is searching — the one field is the entry point, and on a
+      // phone that means opening the compact bar first.
+      revealSearch();
+      return;
     case "genre": {
       const genre = actionEl.dataset.value;
       if (!genre) return;
@@ -850,9 +869,7 @@ function onKeyDown(event) {
   }
   if (event.key === "/") {
     event.preventDefault();
-    const input = qs("#search");
-    input?.focus();
-    input?.select();
+    revealSearch();
     return;
   }
   if (event.key === "?") {
@@ -867,7 +884,7 @@ function onKeyDown(event) {
   }
   if (event.key === "t") {
     event.preventDefault();
-    qs(".js-theme-toggle")?.click();
+    (qsa(".js-theme-toggle").find((btn) => btn.offsetParent !== null) || qs(".js-theme-toggle"))?.click();
     return;
   }
   if (event.key === "f" && section === "watchlist") {
@@ -928,7 +945,7 @@ function paletteCommands(currentQuery) {
     label: "Switch theme",
     icon: "sparkle",
     hint: "t",
-    run: () => qs(".js-theme-toggle")?.click(),
+    run: () => (qsa(".js-theme-toggle").find((btn) => btn.offsetParent !== null) || qs(".js-theme-toggle"))?.click(),
   });
   push({ id: "act-help", group: "Actions", label: "Keyboard shortcuts", icon: "keyboard", hint: "?", run: () => openHelp() });
   push({
@@ -1115,6 +1132,7 @@ function bindGestures() {
    ------------------------------------------------------------ */
 
 function bindChrome() {
+  initChrome();
   for (const button of qsa(".js-refresh")) {
     button.addEventListener("click", () => refreshCurrent({ background: schedules[section === "recent" ? "recent" : "upcoming"].events.length > 0 }));
   }
@@ -1129,16 +1147,7 @@ function bindChrome() {
   }
 
   const input = qs("#search");
-  if (input) {
-    // A long placeholder is clipped on phones; keep the hint honest at the
-    // width it is actually shown.
-    const narrow = window.matchMedia("(max-width: 520px)");
-    const setPlaceholder = () => {
-      input.placeholder = narrow.matches ? "Search anime" : "Search anime, titles, synonyms…";
-    };
-    setPlaceholder();
-    narrow.addEventListener?.("change", setPlaceholder);
-  }
+  if (input) input.placeholder = "Search the almanac";
   input?.addEventListener("input", () => setQuery(input.value));
   input?.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
@@ -1220,6 +1229,11 @@ function bindStorage() {
     showToast("You're offline — showing saved data.");
     render();
   });
+
+  // A cold start with no connection never fires an "offline" event: the app
+  // is offline from the first byte, so the notice has to be derived from the
+  // state rather than from a transition.
+  if (navigator.onLine === false) setOfflineBar(true);
 }
 
 function setOfflineBar(visible) {
@@ -1362,6 +1376,7 @@ async function init() {
   });
 
   busOn("prefs:changed", () => {
+    refreshChrome();
     tickNow();
     render();
   });

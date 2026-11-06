@@ -18,6 +18,7 @@ const ICONS = {
   plus: '<path d="M12 5v14M5 12h14"/>',
   minus: '<path d="M5 12h14"/>',
   check: '<path d="m5 13 4.5 4.5L19 7"/>',
+  "arrow-up-right": '<path d="M7 17 17 7"/><path d="M9 7h8v8"/>',
   external:
     '<path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5"/>',
   upload:

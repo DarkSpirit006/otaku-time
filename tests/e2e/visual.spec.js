@@ -17,6 +17,7 @@ import {
   makeMedia,
   detailsPayload,
   searchPayload,
+  typeSearch,
 } from "./helpers.js";
 
 // A fixed instant so countdowns, "now" markers and day labels hold still.
@@ -87,12 +88,22 @@ const MASK = [];
  * CSSOM assignment on purpose: the page ships `style-src 'self'`, so an
  * injected <style> tag or a style attribute would be blocked outright.
  */
-/** Wait until every image in the document has decoded (or failed). */
+/**
+ * Wait until every image in the document has decoded (or failed).
+ *
+ * Only rendered images count: a lazy image inside a display:none subtree
+ * (the agenda drops its thumbnails) is never requested, so `complete` stays
+ * false forever and the wait times out on a page that is finished drawing.
+ */
 async function imagesSettled(page) {
   await page.waitForFunction(
-    () =>
-      [...document.images].every((img) => img.complete) &&
-      [...document.images].every((img) => !img.dataset.blurUp || img.classList.contains("is-loaded")),
+    () => {
+      const rendered = [...document.images].filter((img) => img.getClientRects().length > 0);
+      return (
+        rendered.every((img) => img.complete) &&
+        rendered.every((img) => !img.dataset.blurUp || img.classList.contains("is-loaded"))
+      );
+    },
     null,
     { timeout: 10_000 }
   );
@@ -229,7 +240,7 @@ for (const theme of ["dark", "light"]) {
 
       test("search", async ({ page }) => {
         await boot(page, { theme });
-        await page.fill("#search", "aot");
+        await typeSearch(page, "aot");
         await expect(page.locator(".card").first()).toBeVisible();
         await page.evaluate(() => document.fonts.ready);
         await expect(page).toHaveScreenshot(`search-${theme}-${sizeName}.png`, {

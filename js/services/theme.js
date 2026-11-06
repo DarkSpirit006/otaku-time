@@ -13,8 +13,8 @@ import { emit } from "./bus.js";
 export const THEME_KEY = "otaku-time.theme.v1";
 export const LEGACY_THEME_KEY = "okaeri.theme.v1";
 
-const DARK_META = "#08080a";
-const LIGHT_META = "#f1ede4";
+const DARK_META = "#0e0d0b";
+const LIGHT_META = "#f0ebdf";
 
 let initialized = false;
 let preference = "auto"; // "auto" | "dark" | "light"
@@ -72,10 +72,23 @@ export function setPreference(value) {
   emit("theme:changed", { theme });
 }
 
-/** Toggle between light and dark (sets an explicit preference). */
+/**
+ * Toggle between light and dark (sets an explicit preference).
+ *
+ * Where the View Transitions API exists the swap is cross-faded rather
+ * than flipped: two full palettes changing at once is a flash. The
+ * document already declares a 240ms ::view-transition duration, and
+ * reduced-motion users get an instant swap through the same API.
+ */
 export function toggle() {
   const current = resolve(preference);
-  setPreference(current === "light" ? "dark" : "light");
+  const next = current === "light" ? "dark" : "light";
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (typeof document.startViewTransition === "function" && !reduce) {
+    document.startViewTransition(() => setPreference(next));
+    return;
+  }
+  setPreference(next);
 }
 
 /** Current resolved theme: "dark" | "light". */

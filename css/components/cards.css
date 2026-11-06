@@ -3,11 +3,24 @@
    No boxes: artwork, a hairline, and typography.
    ============================================================ */
 
+/* A card is a printed entry, not a tile: a small cover, then the title
+   and the broadcast line beside it. One hairline frame, no shadow. */
 .card {
   position: relative;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 4.4rem minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
   min-width: 0;
+  padding: 8px;
+  border: var(--hair) solid var(--border);
+  background: var(--paper);
+  transition: border-color var(--dur-base) linear;
+}
+
+.card:hover,
+.card:focus-within {
+  border-color: var(--border-strong);
 }
 
 /* Full-card hit area (above content, below controls) */
@@ -28,7 +41,7 @@
 
 .card__poster-wrap {
   position: relative;
-  aspect-ratio: 2 / 3;
+  aspect-ratio: 3 / 4;
   overflow: hidden;
   background:
     linear-gradient(160deg, color-mix(in srgb, var(--tint, var(--surface-3)) 32%, transparent), transparent 70%),
@@ -36,12 +49,14 @@
 }
 
 .card__poster-wrap::after {
-  /* bottom scrim keeps the episode stamp legible on any art */
+  /* colour rule under the cover: the one place the artwork's own colour
+     is allowed to speak */
   content: "";
   position: absolute;
   inset: auto 0 0;
-  height: 38%;
-  background: linear-gradient(180deg, transparent, rgba(6, 6, 8, 0.55));
+  height: 2px;
+  background: var(--tint, var(--accent));
+  opacity: 0.85;
   pointer-events: none;
 }
 
@@ -107,15 +122,15 @@
 /* Episode stamp */
 .card__ep {
   position: absolute;
-  top: 0;
+  bottom: 0;
   left: 0;
   z-index: 2;
-  padding: 4px 8px;
-  background: var(--accent);
-  color: var(--accent-ink);
+  padding: 1px 4px;
+  background: var(--paper);
+  color: var(--accent-text);
   font-family: var(--font-mono);
-  font-size: var(--text-2xs);
-  letter-spacing: 0.1em;
+  font-size: 0.5rem;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   font-variant-numeric: tabular-nums;
   pointer-events: none;
@@ -123,8 +138,8 @@
 
 .card__save {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 6px;
+  right: 6px;
   z-index: 2;
   opacity: 0;
   transform: translateY(-4px);
@@ -154,9 +169,8 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
-  padding-top: var(--sp-2-5);
-  border-top: 1px solid var(--border-faint);
-  margin-top: var(--sp-2-5);
+  min-width: 0;
+  padding: 2px 0 0;
 }
 
 .card__topline {
@@ -165,8 +179,8 @@
   justify-content: space-between;
   gap: var(--sp-2);
   font-family: var(--font-mono);
-  font-size: var(--text-2xs);
-  letter-spacing: 0.12em;
+  font-size: 0.5rem;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-faint);
 }
@@ -182,10 +196,11 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  font-size: 0.94rem;
-  font-weight: 600;
-  line-height: 1.28;
-  letter-spacing: -0.015em;
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.14;
+  letter-spacing: -0.01em;
   color: var(--text);
   transition: color var(--dur-fast) linear;
 }
@@ -203,8 +218,9 @@
 
 .card__airing {
   font-family: var(--font-mono);
-  font-size: var(--text-2xs);
-  letter-spacing: 0.04em;
+  font-size: 0.5rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: var(--accent-text);
 }
 
@@ -282,27 +298,41 @@
 /* ---------- Day group ---------- */
 
 .day-group {
-  margin-bottom: var(--sp-8);
+  margin-bottom: clamp(var(--sp-7), 4vw, var(--sp-9));
 }
 
 .day-group__head {
-  display: grid;
-  grid-template-columns: auto minmax(24px, 1fr) auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: var(--sp-3);
+  justify-content: space-between;
+  gap: 6px var(--sp-4);
   margin-bottom: var(--sp-4);
-  padding-bottom: var(--sp-2);
-  border-bottom: var(--hair) solid var(--border-strong);
+  padding-top: 12px;
+  border-top: 2px solid color-mix(in srgb, var(--text) 68%, transparent);
+}
+
+.day-group__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 12px;
+  min-width: 0;
+}
+
+.day-group__index {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.14em;
+  color: var(--accent-text);
 }
 
 .day-group__label {
-  display: flex;
-  align-items: baseline;
-  gap: var(--sp-2);
   font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 1.02rem;
-  letter-spacing: 0.01em;
+  font-weight: 800;
+  font-size: clamp(1.4rem, 3.2vw, 2.2rem);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
   text-transform: uppercase;
   color: var(--text);
 }
@@ -310,18 +340,46 @@
 .day-group__relative {
   font-family: var(--font-mono);
   font-weight: 400;
-  font-size: var(--text-2xs);
-  letter-spacing: 0.1em;
+  font-size: 0.55rem;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-faint);
 }
 
 .day-group__rule {
-  height: var(--hair);
-  background: var(--border);
+  display: none;
+}
+
+/* Archive day: a sticky mono sub-rule, one per date. */
+.day-group--compact {
+  margin-bottom: var(--sp-5);
+}
+
+.day-group__sub {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: 2px;
+  padding: 6px 0;
+  border-bottom: var(--hair) solid var(--border);
+  background: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-faint);
 }
 
 .day-group__count {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
   white-space: nowrap;
 }
 
@@ -597,6 +655,7 @@
 .card__behind {
   display: inline-block;
   margin-top: 4px;
+  white-space: nowrap;
   font-family: var(--font-mono);
   font-size: var(--text-2xs);
   letter-spacing: 0.06em;
@@ -605,6 +664,177 @@
 }
 
 /* Controls row */
+/* ---------- Library row (watchlist) ----------
+   Desktop is a single list with aligned columns and hairline separators;
+   phones collapse to two lines per entry without any horizontal scroll. */
+
+.card--saved {
+  grid-template-columns: 2rem 2.75rem minmax(0, 1fr) 6.5rem 12rem 8.5rem auto;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 10px;
+  border: 0;
+  border-bottom: var(--hair) solid var(--border);
+  background: transparent;
+}
+
+.card--saved:hover,
+.card--saved:focus-within {
+  background: color-mix(in srgb, var(--text) 2.5%, transparent);
+  border-color: var(--border);
+}
+
+.card--saved.is-tracked {
+  border-left: 2px solid color-mix(in srgb, var(--accent) 70%, transparent);
+  padding-left: 8px;
+}
+
+.card--saved.is-complete {
+  border-left: 2px solid var(--border-strong);
+  padding-left: 8px;
+}
+
+.card--saved .card__poster-wrap {
+  width: 2.75rem;
+  aspect-ratio: 3 / 4;
+}
+
+.card--saved .card__ep {
+  display: none;
+}
+
+.card--saved .card__body {
+  gap: 4px;
+}
+
+.card--saved .card__title {
+  font-size: 0.95rem;
+  -webkit-line-clamp: 1;
+}
+
+.card--saved .card__topline {
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.card--saved .card__status {
+  min-width: 0;
+}
+
+.card--saved .card__progress {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.card--saved .card__controls {
+  margin-top: 2px;
+}
+
+.card--saved .card__number {
+  width: 44px;
+  height: 24px;
+  padding: 0 2px;
+  border: var(--hair) solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font-size: 0.66rem;
+}
+
+.card--saved .card__number:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.card--saved .step-btn {
+  width: 24px;
+  height: 24px;
+}
+
+.card--saved .step-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+.card--saved .segments {
+  max-width: 9rem;
+  gap: 2px;
+}
+
+.card--saved .segment {
+  height: 3px;
+}
+
+/* No explicit status yet: an honest dash rather than a fake state. */
+.status-pill--none {
+  color: var(--text-faint);
+  border-style: dashed;
+}
+
+.card__next {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.card__next-label {
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.card--saved .card__airing {
+  font-size: 0.55rem;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card__row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.card__row-actions .card__save,
+.card__row-actions .icon-btn {
+  opacity: 1;
+  transform: none;
+  position: static;
+  width: 26px;
+  height: 26px;
+  border: var(--hair) solid var(--border);
+  color: var(--text-faint);
+}
+
+.card__row-actions .card__save:hover,
+.card__row-actions .icon-btn:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+  background: transparent;
+}
+
+/* In a printed row the saved state is a tinted stamp, not a red slab. */
+.card__row-actions .card__save.is-saved {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  color: var(--accent-text);
+  backdrop-filter: none;
+}
+
+.card__row-actions .card__details svg,
+.card__row-actions .card__save svg {
+  width: 12px;
+  height: 12px;
+}
+
 .card__controls {
   position: relative;
   z-index: 2; /* above the full-card open overlay */
@@ -697,6 +927,21 @@
 /* ---------- Swipe feedback (touch) ---------- */
 .card--saved {
   touch-action: pan-y;
+}
+
+/* Printed index, counted in DOM order so it always matches the sort. */
+.card-grid--library {
+  counter-reset: shelf;
+}
+
+.card--saved::before {
+  counter-increment: shelf;
+  content: counter(shelf, decimal-leading-zero);
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.1em;
+  color: var(--text-faint);
+  text-align: left;
 }
 
 .card--saved.is-dragging {

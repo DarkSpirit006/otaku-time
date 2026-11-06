@@ -62,9 +62,12 @@
   --text-base: 1rem;
   --text-lg: 1.14rem;
   --text-xl: 1.45rem;
-  --text-2xl: clamp(1.7rem, 1.2rem + 1.6vw, 2.3rem);
-  --text-masthead: clamp(2.9rem, 1.2rem + 4.4vw, 5rem);
+  --text-2xl: clamp(1.5rem, 1.1rem + 1.5vw, 2.3rem);
+  /* Masthead: reference is clamp(2.6rem, 7vw, 5.5rem)/.9. The floor is
+     lowered and the growth capped so "UPCOMING" never clips at 320px. */
+  --text-masthead: clamp(2.05rem, 1.1rem + 5.4vw, 5.5rem);
   --text-hero: clamp(2rem, 1rem + 3.4vw, 3.9rem);
+  --text-display-1: clamp(1.5rem, 0.9rem + 2.6vw, 2.3rem);
 
   --sp-1: 4px;
   --sp-1-5: 6px;
@@ -81,21 +84,22 @@
   --sp-10: 72px;
   --sp-11: 96px;
 
-  /* Sharp, printed matter */
-  --radius: 2px;
-  --radius-md: 3px;
-  --radius-lg: 4px;
+  /* Sharp, printed matter: 2px is the ceiling. */
+  --radius: 1px;
+  --radius-md: 2px;
+  --radius-lg: 2px;
   --radius-pill: 999px;
 
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out: cubic-bezier(0.22, 0.9, 0.24, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   --dur-fast: 120ms;
   --dur-base: 200ms;
   --dur-slow: 420ms;
-  --dur-reveal: 640ms;
+  --dur-reveal: 600ms;
+  --vt-dur: 240ms;
 
   /* Layout metrics */
-  --rail-w: 232px;
+  --rail-w: 240px;
   --content-pad: clamp(20px, 3.4vw, 56px);
   --topbar-h: 64px;
   --tabbar-h: 62px;
@@ -107,91 +111,109 @@
 [data-theme="dark"] {
   color-scheme: dark;
 
-  --paper: #08080a;
-  --paper-2: #0c0c10;
-  --surface-1: #0c0c10;
-  --surface-2: #111116;
-  --surface-3: #17171e;
-  --surface-raised: #1b1b23;
+  /* Warm ink, not neutral black: #0e0d0b / #14120f / #1a1814 */
+  --paper: #0e0d0b;
+  --paper-2: #14120f;
+  --paper-3: #1a1814;
+  --surface-1: #14120f;
+  --surface-2: #1a1814;
+  --surface-3: #211d17;
+  --surface-raised: #1a1814;
 
-  --text: #f4f1e9;
-  --text-dim: rgba(244, 241, 233, 0.66);
-  --text-faint: rgba(244, 241, 233, 0.58);
-  --text-invert: #0a0a0c;
+  --text: #ece6d8;
+  /* Alpha tiers are production's measured ramp (axe-verified), carried
+     onto the reference hue. The example's .58/.34 tiers fail AA here. */
+  --text-dim: rgba(236, 230, 216, 0.66);
+  --text-faint: rgba(236, 230, 216, 0.58);
+  --text-invert: #0b0b0d;
 
-  --border: rgba(244, 241, 233, 0.14);
-  --border-strong: rgba(244, 241, 233, 0.28);
-  --border-faint: rgba(244, 241, 233, 0.08);
+  --border: rgba(236, 230, 216, 0.14);
+  --border-strong: rgba(236, 230, 216, 0.32);
+  --border-faint: rgba(236, 230, 216, 0.08);
 
-  --accent: #ff3b1f;
+  --accent: #ff4526;
   /* Text-tier accent/gold: same hue, tuned so small labels clear 4.5:1
      on the tinted chips they sit on. Borders keep the vivid token. */
-  --accent-text: #ff3b1f;
-  --gold-text: #ffb020;
-  --accent-hover: #ff5b43;
-  /* Dark ink on the solid accent: 5.5:1. White would only reach 3.5:1. */
+  --accent-text: #ff6a4d;
+  --gold-text: #d8ab3c;
+  /* "Settled" states are gold, not a new green: the almanac prints in
+     ink, paper and two signal colours only. */
+  --ok: #d8ab3c;
+  --accent-hover: #ff5c41;
+  /* Dark ink on the solid accent: 5.4:1. White would only reach 3.5:1. */
   --accent-ink: #0b0b0d;
-  --accent-soft: rgba(255, 59, 31, 0.14);
+  --accent-soft: rgba(255, 69, 38, 0.12);
+  --accent-deep: #d62f14;
 
-  --gold: #ffb020;
-  --gold-soft: rgba(255, 176, 32, 0.14);
-  --live: #ff3b1f;
+  --gold: #d8ab3c;
+  --gold-soft: rgba(216, 171, 60, 0.14);
+  --live: #ff4526;
 
   --overlay: rgba(5, 5, 7, 0.66);
-  --scrim: linear-gradient(180deg, rgba(6, 6, 8, 0) 0%, rgba(6, 6, 8, 0.55) 55%, #08080a 100%);
+  --scrim: linear-gradient(180deg, rgba(14, 13, 11, 0) 0%, rgba(14, 13, 11, 0.55) 55%, #0e0d0b 100%);
 
-  --skeleton-a: rgba(244, 241, 233, 0.05);
-  --skeleton-b: rgba(244, 241, 233, 0.11);
+  --skeleton-a: rgba(236, 230, 216, 0.05);
+  --skeleton-b: rgba(236, 230, 216, 0.11);
 
   --shadow-lift: 0 18px 50px -22px rgba(0, 0, 0, 0.85);
   --shadow-dialog: 0 40px 120px -30px rgba(0, 0, 0, 0.9);
 
-  --focus-ring: #ffb020;
-  --grid-line: rgba(244, 241, 233, 0.05);
+  --focus-ring: #d8ab3c;
+  --grid-line: rgba(236, 230, 216, 0.055);
+  --grain-opacity: 0.05;
+  /* Outlined display type still has to read as text: this alpha
+     composites to ~3.5:1 against the ink page (large-text AA). */
+  --display-stroke: rgba(236, 230, 216, 0.46);
 }
 
 /* ---------- Light: paper ---------- */
 [data-theme="light"] {
   color-scheme: light;
 
-  --paper: #f1ede4;
-  --paper-2: #f7f4ec;
-  --surface-1: #f7f4ec;
-  --surface-2: #fffdf8;
-  --surface-3: #efeade;
-  --surface-raised: #fffdf8;
+  /* Warm paper: #f0ebdf / #e7e1d1 / #ddd6c2 */
+  --paper: #f0ebdf;
+  --paper-2: #e7e1d1;
+  --paper-3: #ddd6c2;
+  --surface-1: #e7e1d1;
+  --surface-2: #f7f3ea;
+  --surface-3: #ddd6c2;
+  --surface-raised: #f7f3ea;
 
-  --text: #14110c;
-  --text-dim: rgba(20, 17, 12, 0.66);
-  --text-faint: rgba(20, 17, 12, 0.63);
-  --text-invert: #fffdf8;
+  --text: #1b1813;
+  --text-dim: rgba(27, 24, 19, 0.68);
+  --text-faint: rgba(27, 24, 19, 0.62);
+  --text-invert: #f0ebdf;
 
-  --border: rgba(20, 17, 12, 0.16);
-  --border-strong: rgba(20, 17, 12, 0.34);
-  --border-faint: rgba(20, 17, 12, 0.08);
+  --border: rgba(27, 24, 19, 0.16);
+  --border-strong: rgba(27, 24, 19, 0.38);
+  --border-faint: rgba(27, 24, 19, 0.08);
 
-  --accent: #c42609;
+  --accent: #c2321b;
   --accent-text: #a51f06;
   --gold-text: #7d4d00;
-  --accent-hover: #a81f06;
-  --accent-ink: #fffdf8;
-  --accent-soft: rgba(224, 45, 12, 0.1);
+  --ok: #7d4d00;
+  --accent-hover: #a51f06;
+  --accent-ink: #f7f3ea;
+  --accent-soft: rgba(194, 50, 27, 0.08);
+  --accent-deep: #a51f06;
 
-  --gold: #a86a00;
-  --gold-soft: rgba(168, 106, 0, 0.12);
-  --live: #e02d0c;
+  --gold: #7d4d00;
+  --gold-soft: rgba(125, 77, 0, 0.1);
+  --live: #c2321b;
 
   --overlay: rgba(28, 24, 18, 0.42);
-  --scrim: linear-gradient(180deg, rgba(241, 237, 228, 0) 0%, rgba(241, 237, 228, 0.6) 60%, #f1ede4 100%);
+  --scrim: linear-gradient(180deg, rgba(240, 235, 223, 0) 0%, rgba(240, 235, 223, 0.6) 60%, #f0ebdf 100%);
 
-  --skeleton-a: rgba(20, 17, 12, 0.05);
-  --skeleton-b: rgba(20, 17, 12, 0.1);
+  --skeleton-a: rgba(27, 24, 19, 0.05);
+  --skeleton-b: rgba(27, 24, 19, 0.1);
 
   --shadow-lift: 0 18px 44px -24px rgba(30, 24, 16, 0.5);
   --shadow-dialog: 0 40px 120px -34px rgba(30, 24, 16, 0.55);
 
-  --focus-ring: #b92307;
-  --grid-line: rgba(20, 17, 12, 0.05);
+  --focus-ring: #7d4d00;
+  --grid-line: rgba(27, 24, 19, 0.055);
+  --grain-opacity: 0.07;
+  --display-stroke: rgba(27, 24, 19, 0.52);
 }
 
 /* Small screens: tighter rail-free metrics */
